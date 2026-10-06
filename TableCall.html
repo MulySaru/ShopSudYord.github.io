@@ -52,7 +52,7 @@
       overflow-x: hidden;
     }
 
-    /* ── SIDEBAR STYLING ── */
+    /* ── SIDEBAR STYLING (IMAGE 2 THEME) ── */
     #sidebar {
       width: 250px;
       min-width: 250px;
@@ -204,7 +204,8 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .btn-header-action {
@@ -225,6 +226,25 @@
     .btn-header-action:hover {
       background: #f1f5f9;
       border-color: #cbd5e1;
+    }
+
+    .btn-reset-db {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #e11d48;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-reset-db:hover {
+      background: #ffe4e6;
     }
 
     .notif-bell-btn {
@@ -363,6 +383,24 @@
     .btn-primary:hover {
       background: #4338ca;
       box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-success:hover {
+      background: #059669;
     }
 
     /* Table Styles */
@@ -808,7 +846,7 @@
 
     .table-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
     }
 
@@ -820,9 +858,14 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 180px;
+      min-height: 190px;
       transition: all 0.2s;
       position: relative;
+      cursor: pointer;
+    }
+
+    .table-card:hover {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
 
     .table-card.calling {
@@ -835,6 +878,10 @@
       border: 2px solid #0284c7;
       background: #f0f9ff;
       animation: pulse-border-blue 1.5s infinite;
+    }
+
+    .table-card.occupied {
+      border-left: 4px solid #4338ca;
     }
 
     @keyframes pulse-border {
@@ -888,8 +935,8 @@
     }
 
     .status-occupied {
-      background: #f1f5f9;
-      color: #475569;
+      background: #eef2ff;
+      color: #4338ca;
     }
 
     .call-box {
@@ -1050,7 +1097,7 @@
   <aside id="sidebar">
     <div class="sidebar-brand" onclick="switchNav('floor')">
       <span class="sidebar-brand-icon">🏠</span>
-      <span>ร้านอาหารทดสอบ POS</span>
+      <span id="sidebar-brand-text">ร้านอาหารทดสอบ POS</span>
     </div>
 
     <nav class="sidebar-menu">
@@ -1067,10 +1114,12 @@
       <a class="sidebar-item" data-view="orders" onclick="switchNav('orders')">
         <span class="item-icon">📋</span>
         <span>ออเดอร์</span>
+        <span class="item-badge" id="sidebar-orders-badge" style="display: none; background: #6366f1;">0</span>
       </a>
       <a class="sidebar-item" data-view="kds" onclick="switchNav('kds')">
         <span class="item-icon">🔥</span>
         <span>หน้าจอครัว (KDS)</span>
+        <span class="item-badge" id="sidebar-kds-badge" style="display: none; background: #ea580c;">0</span>
       </a>
       <a class="sidebar-item" data-view="billing" onclick="switchNav('billing')">
         <span class="item-icon">💳</span>
@@ -1171,10 +1220,17 @@
     <header id="top-bar">
       <div class="header-left">
         <div class="page-title" id="page-breadcrumb-title">โต๊ะอาหาร</div>
-        <div class="page-date">29 พ.ค. 2569</div>
+        <div class="page-date" id="top-current-date">29 พ.ค. 2569</div>
       </div>
 
       <div class="header-right">
+        <!-- 1-Click Reset to 0 Button -->
+        <button class="btn-reset-db" onclick="resetDatabaseToZero()" title="ล้างยอดขาย ออเดอร์ คำขอเรียก เป็น 0 ใหม่สำหรับเปิดร้านจริง">
+          🔄 ล้างฐานข้อมูลเป็น 0
+        </button>
+        <button class="btn-header-action" style="color: #4338ca;" onclick="loadDemoSampleData()" title="โหลดข้อมูลตัวอย่างจากรูปภาพ">
+          📋 โหลดตัวอย่าง
+        </button>
         <button class="btn-header-action" onclick="playChimeSound('calling')" title="ทดสอบเสียงกระดิ่งเรียกพนักงาน">
           🔔 ทดสอบเสียง
         </button>
@@ -1251,7 +1307,7 @@
           <div class="card-header-flex">
             <div class="card-title">
               <span>👥</span>
-              <span>ลูกค้า/สมาชิก (<span id="member-count-text">20</span>)</span>
+              <span>ลูกค้า/สมาชิก (<span id="member-count-text">0</span>)</span>
             </div>
             <button class="btn-primary" onclick="openAddMemberModal()">
               <span>➕</span>
@@ -1353,28 +1409,28 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">💰</div>
             <div class="stat-info">
-              <h3>฿48,950.00</h3>
+              <h3 id="dash-stat-sales">฿0.00</h3>
               <p>ยอดขายวันนี้</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon" style="background: #ecfdf5; color: #059669;">🧾</div>
             <div class="stat-info">
-              <h3>142</h3>
+              <h3 id="dash-stat-orders">0</h3>
               <p>จำนวนออเดอร์</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon" style="background: #fffbeb; color: #d97706;">🪑</div>
             <div class="stat-info">
-              <h3>12 / 20</h3>
+              <h3 id="dash-stat-tables">0 / 20</h3>
               <p>โต๊ะที่กำลังใช้</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon" style="background: #fdf2f8; color: #db2777;">👥</div>
             <div class="stat-info">
-              <h3>20 สมาชิก</h3>
+              <h3 id="dash-stat-members">0 สมาชิก</h3>
               <p>สมาชิกร้านทั้งหมด</p>
             </div>
           </div>
@@ -1383,56 +1439,28 @@
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
           <div class="content-card">
             <div class="card-title" style="margin-bottom: 16px;">📈 ยอดขายรายชั่วโมง (วันนี้)</div>
-            <div style="height: 220px; display: flex; align-items: flex-end; gap: 14px; padding-top: 20px; border-bottom: 1px solid var(--border-color);">
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #c7d2fe; height: 40px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">11:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #818cf8; height: 110px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">12:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #6366f1; height: 160px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">13:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #a5b4fc; height: 70px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">14:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #c7d2fe; height: 50px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">15:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #818cf8; height: 95px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">16:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #4f46e5; height: 180px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">17:00</span>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                <div style="width: 100%; background: #4338ca; height: 200px; border-radius: 4px;"></div>
-                <span style="font-size: 11px; color: var(--text-muted);">18:00</span>
-              </div>
+            <div id="dash-hourly-chart" style="height: 220px; display: flex; align-items: flex-end; gap: 14px; padding-top: 20px; border-bottom: 1px solid var(--border-color);">
+              <!-- Rendered dynamically based on live sales -->
             </div>
           </div>
 
           <div class="content-card">
             <div class="card-title" style="margin-bottom: 16px;">⚡ ลิงก์ด่วน</div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="openNewOrderModal()">
+                ➕ เปิดออเดอร์ใหม่ / สั่งอาหาร
+              </button>
               <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="switchNav('billing')">
-                💳 เช็คบิล / พิมพ์ใบเสร็จ (โต๊ะ S4)
+                💳 เช็คบิล / ชำระเงิน & ออกใบเสร็จ
               </button>
               <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="switchNav('members')">
-                👥 ดูรายชื่อลูกค้า / สมาชิก 20 ท่าน
+                👥 ดูรายชื่อลูกค้า / สมาชิก
               </button>
               <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="switchNav('promotions')">
                 🏷️ จัดการโปรโมชั่นและส่วนลด
               </button>
-              <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="switchNav('best-sellers')">
-                📊 รายงานอันดับสินค้าขายดี 28 เมนู
+              <button class="btn-tbl-action" style="padding: 10px; text-align: left;" onclick="switchNav('kds')">
+                🔥 หน้าจอครัว KDS (คิวอาหาร)
               </button>
             </div>
           </div>
@@ -1444,69 +1472,67 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">💳 เช็คบิล / ชำระเงิน</div>
-            <button class="btn-primary" onclick="openReceiptModal('S4')">
-              🧾 เปิดดูใบเสร็จรับเงิน (โต๊ะ S4)
-            </button>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
             <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
-              <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 14px;">เลือกโต๊ะที่ต้องการชำระ</h4>
+              <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 14px;">เลือกโต๊ะที่ต้องการชำระเงิน</h4>
               <div class="form-group">
                 <label>หมายเลขโต๊ะ</label>
                 <select id="billing-table-select" class="form-input" onchange="onBillingTableSelected()">
-                  <option value="S4">โต๊ะ S4 (6 ท่าน) - ยอด ฿2,994.00</option>
-                  <option value="A1">โต๊ะ A1 (4 ท่าน) - ยอด ฿850.00</option>
-                  <option value="B2">โต๊ะ B2 (4 ท่าน) - ยอด ฿1,240.00</option>
-                  <option value="VIP1">โต๊ะ VIP1 (8 ท่าน) - ยอด ฿4,500.00</option>
+                  <!-- Dynamically populated -->
                 </select>
               </div>
 
               <div class="form-group">
                 <label>ส่วนลด / โปรโมชั่น</label>
-                <select id="billing-promo-select" class="form-input">
+                <select id="billing-promo-select" class="form-input" onchange="recalculateBillingSummary()">
                   <option value="">-- ไม่ใช้โปรโมชั่น --</option>
-                  <option value="BDAY20">Birthday Discount 20%</option>
-                  <option value="GOLD10">สมาชิก Gold ลด 10%</option>
-                  <option value="MINUS50">ลด 50 บาท (ซื้อครบ 300)</option>
                 </select>
               </div>
 
               <div class="form-group">
                 <label>วิธีชำระเงิน</label>
-                <div style="display: flex; gap: 10px;">
-                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
                     <input type="radio" name="pay-method" value="QR ธนาคาร" checked> QR ธนาคาร (พร้อมเพย์)
                   </label>
-                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
                     <input type="radio" name="pay-method" value="เงินสด"> เงินสด
                   </label>
-                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                  <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
                     <input type="radio" name="pay-method" value="บัตรเครดิต"> บัตรเครดิต
                   </label>
                 </div>
               </div>
 
               <button class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="confirmCheckoutCurrentTable()">
-                ✅ ยืนยันชำระเงินและพิมพ์ใบเสร็จ
+                ✅ ยืนยันชำระเงินและออกใบเสร็จ
               </button>
             </div>
 
             <!-- Summary Preview Box -->
             <div style="background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
-              <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 14px;">สรุปรายการชำระ (โต๊ะ S4)</h4>
+              <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 14px;">สรุปรายการชำระ</h4>
+              <div id="billing-items-breakdown" style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; max-height: 120px; overflow-y: auto;">
+                (เลือกโต๊ะเพื่อดูรายการอาหาร)
+              </div>
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px;">
                 <div style="display: flex; justify-content: space-between;">
                   <span>ยอดรวม (Subtotal)</span>
-                  <span style="font-weight: 700;">฿2,994.00</span>
+                  <span style="font-weight: 700;" id="billing-subtotal-text">฿0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                  <span>ส่วนลด (Discount)</span>
+                  <span id="billing-discount-text">฿0.00</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
                   <span>VAT 7.00% (IN)</span>
-                  <span>฿195.87</span>
+                  <span id="billing-vat-text">฿0.00</span>
                 </div>
                 <div style="border-top: 1px dashed var(--border-color); padding-top: 10px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; color: #4338ca;">
                   <span>ยอดสุทธิ</span>
-                  <span>฿2,994.00</span>
+                  <span id="billing-net-text">฿0.00</span>
                 </div>
               </div>
             </div>
@@ -1519,7 +1545,7 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">🔥 หน้าจอครัว (Kitchen Display System)</div>
-            <button class="btn-primary" onclick="simulateNewOrder()">➕ ส่งออเดอร์จำลองเข้าครัว</button>
+            <button class="btn-primary" onclick="openNewOrderModal()">➕ ส่งออเดอร์ใหม่เข้าครัว</button>
           </div>
           <div id="kds-tickets-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
             <!-- Kitchen orders dynamically rendered -->
@@ -1531,7 +1557,8 @@
       <section id="view-orders" class="view-section">
         <div class="content-card">
           <div class="card-header-flex">
-            <div class="card-title">📋 รายการออเดอร์ที่เปิดอยู่</div>
+            <div class="card-title">📋 รายการออเดอร์ทั้งหมด</div>
+            <button class="btn-primary" onclick="openNewOrderModal()">➕ เปิดออเดอร์ใหม่</button>
           </div>
           <div class="data-table-container">
             <table class="data-table">
@@ -1539,10 +1566,12 @@
                 <tr>
                   <th>เลขออเดอร์</th>
                   <th>โต๊ะ</th>
-                  <th>รายการ</th>
+                  <th>รายการอาหาร</th>
                   <th>จำนวน</th>
                   <th>ยอดเงิน</th>
+                  <th>เวลา</th>
                   <th>สถานะ</th>
+                  <th style="text-align: center;">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="orders-list-tbody">
@@ -1553,7 +1582,7 @@
         </div>
       </section>
 
-      <!-- VIEW 9: เมนูอาหาร & หมวดหมู่ -->
+      <!-- VIEW 9: เมนูอาหาร -->
       <section id="view-menu" class="view-section">
         <div class="content-card">
           <div class="card-header-flex">
@@ -1569,6 +1598,7 @@
                   <th>หมวดหมู่</th>
                   <th>ราคา</th>
                   <th>สถานะ</th>
+                  <th style="text-align: center;">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="menu-items-tbody">
@@ -1605,11 +1635,37 @@
         </div>
       </section>
 
-      <!-- VIEW 12: สต็อกวัตถุดิบ (STOCK) -->
+      <!-- VIEW 12: ลงเวลา (ATTENDANCE) -->
+      <section id="view-attendance" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">⏱️ บันทึกการลงเวลาทำงาน</div>
+          </div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>พนักงาน</th>
+                  <th>วันที่</th>
+                  <th>เวลาเข้างาน</th>
+                  <th>เวลาออกงาน</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 13: สต็อกวัตถุดิบ (STOCK) -->
       <section id="view-stock" class="view-section">
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">📦 สต็อกวัตถุดิบ</div>
+            <button class="btn-primary" onclick="openAddStockModal()">➕ เพิ่มวัตถุดิบ</button>
           </div>
           <div class="data-table-container">
             <table class="data-table">
@@ -1619,7 +1675,8 @@
                   <th>รายการวัตถุดิบ</th>
                   <th>คงเหลือ</th>
                   <th>หน่วย</th>
-                  <th>สถานะ</th>
+                  <th>ปรับสต็อก</th>
+                  <th style="text-align: center;">จัดการ</th>
                 </tr>
               </thead>
               <tbody id="stock-tbody">
@@ -1630,48 +1687,174 @@
         </div>
       </section>
 
-      <!-- VIEW 13: หมวดหมู่ / บุฟเฟ่ต์ / โซน / ตั้งค่า -->
+      <!-- VIEW 14: ผู้จำหน่าย (SUPPLIERS) -->
+      <section id="view-suppliers" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">🚚 ข้อมูลผู้จำหน่าย (Suppliers)</div>
+            <button class="btn-primary" onclick="openAddSupplierModal()">➕ เพิ่มผู้จำหน่าย</button>
+          </div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ชื่อผู้จำหน่าย / บริษัท</th>
+                  <th>ผู้ติดต่อ</th>
+                  <th>เบอร์โทร</th>
+                  <th>สินค้าที่จำหน่าย</th>
+                  <th style="text-align: center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="suppliers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 15: ใบสั่งซื้อ (PO) -->
+      <section id="view-po" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">🛒 ใบสั่งซื้อวัตถุดิบ (Purchase Orders)</div>
+            <button class="btn-primary" onclick="openAddPoModal()">➕ เปิดใบสั่งซื้อใหม่</button>
+          </div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่ PO</th>
+                  <th>ผู้จำหน่าย</th>
+                  <th>รายการ</th>
+                  <th>ยอดเงิน</th>
+                  <th>วันที่</th>
+                  <th>สถานะ</th>
+                  <th style="text-align: center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="po-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 16: รายจ่าย (EXPENSES) -->
+      <section id="view-expenses" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">📑 บันทึกรายจ่ายร้านอาหาร</div>
+            <button class="btn-primary" onclick="openAddExpenseModal()">➕ บันทึกรายจ่าย</button>
+          </div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>วันที่</th>
+                  <th>รายการรายจ่าย</th>
+                  <th>หมวดหมู่</th>
+                  <th>จำนวนเงิน</th>
+                  <th style="text-align: center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 17: หมวดหมู่ -->
       <section id="view-categories" class="view-section">
         <div class="content-card">
-          <div class="card-title" style="margin-bottom: 16px;">🏷️ หมวดหมู่อาหาร</div>
+          <div class="card-header-flex">
+            <div class="card-title">🏷️ จัดการหมวดหมู่อาหาร</div>
+            <button class="btn-primary" onclick="openAddCategoryModal()">➕ เพิ่มหมวดหมู่</button>
+          </div>
           <div style="display: flex; flex-wrap: wrap; gap: 10px;" id="categories-chips"></div>
         </div>
       </section>
 
+      <!-- VIEW 18: บุฟเฟ่ต์/ชาบู -->
       <section id="view-buffet" class="view-section">
         <div class="content-card">
-          <div class="card-title" style="margin-bottom: 16px;">🍲 บุฟเฟ่ต์ / ชาบู / หมูกระทะ</div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-            <div style="padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: #f8fafc;">
-              <h3 style="font-size: 16px; font-weight: 700;">Standard Shabu</h3>
-              <div style="font-size: 22px; font-weight: 800; color: #10b981; margin: 8px 0;">฿299 / ท่าน</div>
-              <p style="font-size: 12px; color: var(--text-muted);">หมูสไลซ์ ไก่ ผักรวม วุ้นเส้น เต้าหู้ไข่ (90 นาที)</p>
+          <div class="card-header-flex">
+            <div class="card-title">🍲 จัดการแพ็กเกจ บุฟเฟ่ต์ / ชาบู</div>
+            <button class="btn-primary" onclick="openAddBuffetModal()">➕ เพิ่มแพ็กเกจ</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;" id="buffet-packages-grid">
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 19: โซน -->
+      <section id="view-zones" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">🔀 โซนที่นั่งในร้านอาหาร</div>
+            <button class="btn-primary" onclick="openAddZoneModal()">➕ เพิ่มโซน</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;" id="zones-list-container">
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 20: รายงานยอดขาย -->
+      <section id="view-sales-report" class="view-section">
+        <div class="content-card">
+          <div class="card-header-flex">
+            <div class="card-title">📈 ประวัติการขายและบิลใบเสร็จ</div>
+          </div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่บิล</th>
+                  <th>โต๊ะ</th>
+                  <th>ยอดสุทธิ</th>
+                  <th>วิธีชำระ</th>
+                  <th>วันที่ / เวลา</th>
+                  <th style="text-align: center;">ดูใบเสร็จ</th>
+                </tr>
+              </thead>
+              <tbody id="sales-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 21: กำไร/ขาดทุน -->
+      <section id="view-profit-loss" class="view-section">
+        <div class="content-card">
+          <div class="card-title" style="margin-bottom: 20px;">⚖️ สรุปกำไร / ขาดทุน</div>
+          <div class="stats-bar">
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #ecfdf5; color: #059669;">📈</div>
+              <div class="stat-info">
+                <h3 id="pl-total-sales" style="color: #059669;">฿0.00</h3>
+                <p>รายรับทั้งหมด (ยอดขาย)</p>
+              </div>
             </div>
-            <div style="padding: 18px; border: 1px solid #c7d2fe; border-radius: 12px; background: #eef2ff;">
-              <h3 style="font-size: 16px; font-weight: 700;">Premium Shabu & Seafood</h3>
-              <div style="font-size: 22px; font-weight: 800; color: #4338ca; margin: 8px 0;">฿499 / ท่าน</div>
-              <p style="font-size: 12px; color: var(--text-muted);">เนื้อสไลซ์ กุ้งสด ปลาหมึก เกี๊ยวกุ้ง ของทอด (120 นาที)</p>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #fff1f2; color: #e11d48;">📉</div>
+              <div class="stat-info">
+                <h3 id="pl-total-expenses" style="color: #e11d48;">฿0.00</h3>
+                <p>รายจ่ายทั้งหมด</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #eef2ff; color: #4338ca;">💰</div>
+              <div class="stat-info">
+                <h3 id="pl-net-profit" style="color: #4338ca;">฿0.00</h3>
+                <p>กำไรสุทธิ</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="view-zones" class="view-section">
-        <div class="content-card">
-          <div class="card-title" style="margin-bottom: 16px;">🔀 โซนที่นั่งในร้าน</div>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px;">
-            <li>🔹 <strong>โซน S (หน้าร้าน)</strong>: โต๊ะ S1 - S8</li>
-            <li>🔹 <strong>โซน A (ห้องแอร์)</strong>: โต๊ะ A1 - A6</li>
-            <li>🔹 <strong>โซน B (ระเบียงกลางแจ้ง)</strong>: โต๊ะ B1 - B6</li>
-            <li>🔹 <strong>โซน VIP</strong>: โต๊ะ VIP1 - VIP2</li>
-          </ul>
-        </div>
-      </section>
-
+      <!-- VIEW 22: ตั้งค่าทั่วไป -->
       <section id="view-settings" class="view-section">
         <div class="content-card">
-          <div class="card-title" style="margin-bottom: 16px;">⚙️ ตั้งค่าร้านอาหาร & พร้อมเพย์</div>
-          <div style="max-width: 500px;">
+          <div class="card-title" style="margin-bottom: 16px;">⚙️ ตั้งค่าร้านอาหาร & พร้อมเพย์ (PromptPay)</div>
+          <div style="max-width: 540px;">
             <div class="form-group">
               <label>ชื่อร้านอาหาร</label>
               <input type="text" class="form-input" id="setting-store-name" value="ร้านอาหารทดสอบ POS">
@@ -1697,15 +1880,54 @@
         </div>
       </section>
 
+      <!-- VIEW 23: เครื่องพิมพ์ -->
+      <section id="view-printers" class="view-section">
+        <div class="content-card">
+          <div class="card-title" style="margin-bottom: 16px;">🖨️ ตั้งค่าเครื่องพิมพ์ใบเสร็จ (Thermal Printer)</div>
+          <div style="max-width: 500px;">
+            <div class="form-group">
+              <label>ขนาดกระดาษ</label>
+              <select class="form-input" id="printer-paper-size">
+                <option value="80mm">80 mm (มาตรฐานร้านอาหาร)</option>
+                <option value="58mm">58 mm (พกพา)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ตัดกระดาษอัตโนมัติ (Auto Cut)</label>
+              <select class="form-input" id="printer-autocut">
+                <option value="yes">เปิดใช้งาน (Yes)</option>
+                <option value="no">ปิดใช้งาน (No)</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+              <button class="btn-primary" onclick="showToast('💾 บันทึกการตั้งค่าเครื่องพิมพ์เรียบร้อย')">💾 บันทึก</button>
+              <button class="btn-tbl-action" onclick="window.print()">🖨️ ทดสอบพิมพ์</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 24: สำรองข้อมูล & รีเซ็ตฐานข้อมูล -->
       <section id="view-backup" class="view-section">
         <div class="content-card">
-          <div class="card-title" style="margin-bottom: 16px;">💾 สำรองข้อมูล & กู้คืน</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-            ระบบทำงานผ่านเบราว์เซอร์ 100% (ไม่ต้องพึ่ง Docker) ข้อมูลทั้งหมดจะถูกบันทึกไว้ในเบราว์เซอร์อย่างปลอดภัย
+          <div class="card-title" style="margin-bottom: 16px;">💾 สำรองข้อมูล & จัดการฐานข้อมูล</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
+            ระบบทำงานแบบ Client-Side Standalone บน GitHub Pages ข้อมูลจะถูกเก็บใน Browser LocalStorage ปลอดภัย 100% ไม่ต้องต่อ Docker หรือ Server
           </p>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn-primary" onclick="exportDataToJson()">📥 ส่งออกข้อมูล (JSON)</button>
-            <button class="btn-tbl-action" style="color: var(--danger);" onclick="resetAllDefaults()">🔄 รีเซ็ตข้อมูลตั้งต้น</button>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn-reset-db" style="padding: 10px 16px; font-size: 13px;" onclick="resetDatabaseToZero()">
+              🔄 รีเซ็ตฐานข้อมูลทั้งหมดเป็น 0 (Clean Start สำหรับเปิดร้านจริง)
+            </button>
+            <button class="btn-primary" onclick="loadDemoSampleData()">
+              📋 โหลดข้อมูลตัวอย่างตามรูปภาพ (Demo Sample Data)
+            </button>
+            <button class="btn-tbl-action" onclick="exportDataToJson()">
+              📥 ส่งออกไฟล์สำรอง (JSON)
+            </button>
+            <label class="btn-tbl-action" style="cursor: pointer; display: inline-flex; align-items: center;">
+              📤 นำเข้าไฟล์สำรอง (JSON)
+              <input type="file" id="import-json-input" style="display: none;" onchange="importDataFromJson(event)">
+            </label>
           </div>
         </div>
       </section>
@@ -1752,20 +1974,29 @@
 
         <div class="receipt-divider"></div>
 
+        <!-- Receipt items list -->
+        <div id="rcpt-items-list" style="margin: 6px 0;"></div>
+
+        <div class="receipt-divider"></div>
+
         <div class="receipt-row">
           <span>ยอดรวม</span>
-          <span id="rcpt-subtotal">2,994.00</span>
+          <span id="rcpt-subtotal">0.00</span>
+        </div>
+        <div class="receipt-row" id="rcpt-discount-row" style="display: none; color: #059669;">
+          <span>ส่วนลด</span>
+          <span id="rcpt-discount">0.00</span>
         </div>
         <div class="receipt-row">
           <span>VAT 7.00% (IN)</span>
-          <span id="rcpt-vat">195.87</span>
+          <span id="rcpt-vat">0.00</span>
         </div>
 
         <div class="receipt-divider"></div>
 
         <div class="receipt-row bold">
           <span style="font-size: 16px;">สุทธิ</span>
-          <span class="receipt-total-large" id="rcpt-net-total">2,994.00</span>
+          <span class="receipt-total-large" id="rcpt-net-total">0.00</span>
         </div>
         <div class="receipt-row">
           <span>วิธีชำระ</span>
@@ -1773,7 +2004,7 @@
         </div>
         <div class="receipt-row">
           <span>รับมา</span>
-          <span id="rcpt-received">2,994.00</span>
+          <span id="rcpt-received">0.00</span>
         </div>
 
         <div class="receipt-divider"></div>
@@ -1812,7 +2043,227 @@
     </div>
   </div>
 
-  <!-- ── 4. CUSTOMER SIMULATION MODAL (TABLECALL BELL & BILL CALLER) ── -->
+  <!-- ── 4. TABLE ACTION MODAL ── -->
+  <div class="modal-overlay" id="table-action-modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 18px; font-weight: 800;" id="table-modal-num">โต๊ะ S4</h3>
+        <button onclick="closeTableActionModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" id="table-modal-desc">
+        โซน S • 4 ที่นั่ง
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn-primary" style="justify-content: center; padding: 11px;" onclick="openOrderForCurrentTableModal()">
+          🍽️ สั่งอาหาร / เปิดออเดอร์
+        </button>
+        <button class="btn-tbl-action" style="padding: 11px;" onclick="simulateCallFromStaffModal()">
+          🔔 จำลองกดเรียกพนักงาน
+        </button>
+        <button class="btn-tbl-action" style="padding: 11px;" onclick="simulateBillFromStaffModal()">
+          💳 จำลองขอยอดเช็คบิล
+        </button>
+        <button class="btn-success" style="justify-content: center; padding: 11px;" onclick="checkoutCurrentTableFromModal()">
+          🧾 เช็คบิล & ชำระเงิน (ออกใบเสร็จ)
+        </button>
+        <button class="btn-tbl-action" style="color: var(--danger); padding: 11px;" onclick="clearCurrentTableFromModal()">
+          🧹 เคลียร์เป็นโต๊ะว่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. NEW ORDER MODAL ── -->
+  <div class="modal-overlay" id="new-order-modal">
+    <div class="modal-box" style="max-width: 540px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ เปิดออเดอร์ / สั่งอาหารเข้าครัว</h3>
+        <button onclick="closeNewOrderModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group">
+        <label>เลือกโต๊ะ</label>
+        <select id="order-table-select" class="form-input"></select>
+      </div>
+      <div class="form-group">
+        <label>เลือกเมนูอาหาร</label>
+        <div id="order-menu-selection" style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+          <!-- Items dynamically generated -->
+        </div>
+      </div>
+      <div class="form-group">
+        <label>หมายเหตุเพิ่มเติม (เช่น ไม่เผ็ด / แยกน้ำ)</label>
+        <input type="text" id="order-note-input" class="form-input" placeholder="ระบุความต้องการพิเศษ...">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="submitNewOrder()">🚀 ส่งออเดอร์เข้าครัว</button>
+        <button class="btn-tbl-action" onclick="closeNewOrderModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. ADD/EDIT MEMBER MODAL (IMAGE 2) ── -->
+  <div class="modal-overlay" id="member-modal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;" id="member-modal-title">➕ เพิ่มสมาชิกร้านอาหาร</h3>
+        <button onclick="closeMemberModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <input type="hidden" id="edit-member-id">
+      <div class="form-group">
+        <label>รหัสสมาชิก</label>
+        <input type="text" id="member-code" class="form-input" placeholder="เช่น CUS000001">
+      </div>
+      <div class="form-group">
+        <label>ชื่อ - นามสกุล</label>
+        <input type="text" id="member-name" class="form-input" placeholder="เช่น คุณสมชาย ใจดี">
+      </div>
+      <div class="form-group">
+        <label>เบอร์โทรศัพท์</label>
+        <input type="text" id="member-phone" class="form-input" placeholder="เช่น 0812345001">
+      </div>
+      <div class="form-group">
+        <label>ระดับสมาชิก</label>
+        <select id="member-tier" class="form-input">
+          <option value="Bronze">Bronze</option>
+          <option value="Silver" selected>Silver</option>
+          <option value="Gold">Gold</option>
+          <option value="Platinum">Platinum</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>แต้มสะสม</label>
+        <input type="number" id="member-points" class="form-input" value="0">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="saveMember()">💾 บันทึก</button>
+        <button class="btn-tbl-action" onclick="closeMemberModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. ADD/EDIT PROMOTION MODAL (IMAGE 3) ── -->
+  <div class="modal-overlay" id="promo-modal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;" id="promo-modal-title">➕ เพิ่มโปรโมชั่นใหม่</h3>
+        <button onclick="closePromoModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <input type="hidden" id="edit-promo-id">
+      <div class="form-group">
+        <label>ชื่อโปรโมชั่น</label>
+        <input type="text" id="promo-title" class="form-input" placeholder="เช่น ลด 10% ทุกเมนู">
+      </div>
+      <div class="form-group">
+        <label>รหัสโค้ด (CODE)</label>
+        <input type="text" id="promo-code-input" class="form-input" placeholder="เช่น SAVE10">
+      </div>
+      <div class="form-group">
+        <label>ป้ายแท็ก (Badge)</label>
+        <input type="text" id="promo-badge-input" class="form-input" value="ลด %">
+      </div>
+      <div class="form-group">
+        <label>รายละเอียด / เงื่อนไข</label>
+        <input type="text" id="promo-desc-input" class="form-input" placeholder="เช่น ลด 10% เมื่อซื้อครบ 500 บาท">
+      </div>
+      <div class="form-group">
+        <label>มูลค่าส่วนลดที่จะแสดง</label>
+        <input type="text" id="promo-value-input" class="form-input" placeholder="เช่น ลด 10% หรือ ฿50.00">
+      </div>
+      <div class="form-group">
+        <label>ช่วงเวลาที่ใช้ได้</label>
+        <input type="text" id="promo-date-input" class="form-input" value="ระหว่าง 01 พ.ค. 2569 - 30 มิ.ย. 2569">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="savePromotion()">💾 บันทึก</button>
+        <button class="btn-tbl-action" onclick="closePromoModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 8. ADD/EDIT MENU ITEM MODAL ── -->
+  <div class="modal-overlay" id="menu-modal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ เพิ่มเมนูอาหารใหม่</h3>
+        <button onclick="closeMenuModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group">
+        <label>ชื่อเมนู</label>
+        <input type="text" id="menu-name-input" class="form-input" placeholder="เช่น ข้าวกะเพราหมูกรอบ">
+      </div>
+      <div class="form-group">
+        <label>หมวดหมู่</label>
+        <select id="menu-category-select" class="form-input"></select>
+      </div>
+      <div class="form-group">
+        <label>ราคา (บาท)</label>
+        <input type="number" id="menu-price-input" class="form-input" value="60">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="saveMenuItem()">💾 บันทึก</button>
+        <button class="btn-tbl-action" onclick="closeMenuModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 9. ADD/EDIT STOCK MODAL ── -->
+  <div class="modal-overlay" id="stock-modal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ เพิ่มสต็อกวัตถุดิบ</h3>
+        <button onclick="closeStockModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group">
+        <label>รหัสวัตถุดิบ</label>
+        <input type="text" id="stock-code-input" class="form-input" placeholder="เช่น STK001">
+      </div>
+      <div class="form-group">
+        <label>ชื่อวัตถุดิบ</label>
+        <input type="text" id="stock-name-input" class="form-input" placeholder="เช่น หมูสไลซ์">
+      </div>
+      <div class="form-group">
+        <label>จำนวนเริ่มต้น</label>
+        <input type="number" id="stock-qty-input" class="form-input" value="10">
+      </div>
+      <div class="form-group">
+        <label>หน่วยนับ</label>
+        <input type="text" id="stock-unit-input" class="form-input" value="กก.">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="saveStockItem()">💾 บันทึก</button>
+        <button class="btn-tbl-action" onclick="closeStockModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 10. ADD EXPENSE MODAL ── -->
+  <div class="modal-overlay" id="expense-modal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ บันทึกรายจ่าย</h3>
+        <button onclick="closeExpenseModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="form-group">
+        <label>รายการรายจ่าย</label>
+        <input type="text" id="exp-title-input" class="form-input" placeholder="เช่น ค่าน้ำแข็งหลอด / ค่าแก๊ส">
+      </div>
+      <div class="form-group">
+        <label>หมวดหมู่</label>
+        <input type="text" id="exp-cat-input" class="form-input" placeholder="เช่น วัตถุดิบ, สาธารณูปโภค">
+      </div>
+      <div class="form-group">
+        <label>จำนวนเงิน (บาท)</label>
+        <input type="number" id="exp-amount-input" class="form-input" value="100">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="saveExpenseItem()">💾 บันทึก</button>
+        <button class="btn-tbl-action" onclick="closeExpenseModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 11. CUSTOMER SIMULATION MODAL (TABLECALL BELL & BILL CALLER) ── -->
   <div class="modal-overlay" id="customer-sim-modal">
     <div class="modal-box" style="max-width: 440px; padding: 0; border-radius: 24px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 20px; text-align: center; position: relative;">
@@ -1860,88 +2311,10 @@
     </div>
   </div>
 
-  <!-- ── 5. ADD/EDIT MEMBER MODAL ── -->
-  <div class="modal-overlay" id="member-modal">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 18px; font-weight: 800;" id="member-modal-title">➕ เพิ่มสมาชิกร้านอาหาร</h3>
-        <button onclick="closeMemberModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
-      </div>
-      <input type="hidden" id="edit-member-id">
-      <div class="form-group">
-        <label>รหัสสมาชิก</label>
-        <input type="text" id="member-code" class="form-input" placeholder="เช่น CUS000021">
-      </div>
-      <div class="form-group">
-        <label>ชื่อ - นามสกุล</label>
-        <input type="text" id="member-name" class="form-input" placeholder="เช่น คุณสมชาย ใจดี">
-      </div>
-      <div class="form-group">
-        <label>เบอร์โทรศัพท์</label>
-        <input type="text" id="member-phone" class="form-input" placeholder="เช่น 0812345678">
-      </div>
-      <div class="form-group">
-        <label>ระดับสมาชิก</label>
-        <select id="member-tier" class="form-input">
-          <option value="Bronze">Bronze</option>
-          <option value="Silver" selected>Silver</option>
-          <option value="Gold">Gold</option>
-          <option value="Platinum">Platinum</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>แต้มสะสม</label>
-        <input type="number" id="member-points" class="form-input" value="100">
-      </div>
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="saveMember()">💾 บันทึก</button>
-        <button class="btn-tbl-action" onclick="closeMemberModal()">ยกเลิก</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 6. ADD/EDIT PROMOTION MODAL ── -->
-  <div class="modal-overlay" id="promo-modal">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 18px; font-weight: 800;">➕ เพิ่มโปรโมชั่นใหม่</h3>
-        <button onclick="closePromoModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">✕</button>
-      </div>
-      <div class="form-group">
-        <label>ชื่อโปรโมชั่น</label>
-        <input type="text" id="promo-title" class="form-input" placeholder="เช่น มา 4 จ่าย 3">
-      </div>
-      <div class="form-group">
-        <label>รหัสโค้ด (CODE)</label>
-        <input type="text" id="promo-code-input" class="form-input" placeholder="เช่น COME4PAY3">
-      </div>
-      <div class="form-group">
-        <label>ป้ายแท็ก (Badge)</label>
-        <input type="text" id="promo-badge-input" class="form-input" value="ลด %">
-      </div>
-      <div class="form-group">
-        <label>รายละเอียด / เงื่อนไข</label>
-        <input type="text" id="promo-desc-input" class="form-input" placeholder="เช่น สำหรับลูกค้าที่มา 4 ท่าน">
-      </div>
-      <div class="form-group">
-        <label>มูลค่าส่วนลดที่จะแสดง</label>
-        <input type="text" id="promo-value-input" class="form-input" placeholder="เช่น ลด 25% หรือ ฿100.00">
-      </div>
-      <div class="form-group">
-        <label>ช่วงเวลาที่ใช้ได้</label>
-        <input type="text" id="promo-date-input" class="form-input" value="ระหว่าง 01 มิ.ย. 2569 - 30 มิ.ย. 2569">
-      </div>
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn-primary" style="flex: 1; justify-content: center;" onclick="savePromotion()">💾 บันทึก</button>
-        <button class="btn-tbl-action" onclick="closePromoModal()">ยกเลิก</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification Box -->
   <div id="toast-container"></div>
 
-  <!-- ── 7. PURE JAVASCRIPT QR CODE ENGINE (100% OFFLINE, NO DOCKER) ── -->
+  <!-- ── 12. PURE JAVASCRIPT QR CODE ENGINE (100% OFFLINE, NO DOCKER) ── -->
   <script>
     var QRCodeLib = (function () {
       function QR8bitByte(data) { this.mode = 4; this.data = data; }
@@ -2005,34 +2378,6 @@
       for (var i = 0; i < 8; i++) QRMath.EXP_TABLE[i] = 1 << i;
       for (var i = 8; i < 256; i++) QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4] ^ QRMath.EXP_TABLE[i - 5] ^ QRMath.EXP_TABLE[i - 6] ^ QRMath.EXP_TABLE[i - 8];
       for (var i = 0; i < 255; i++) QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]] = i;
-
-      function QRPolynomial(num, shift) {
-        var offset = 0;
-        while (offset < num.length && num[offset] == 0) offset++;
-        this.num = new Array(num.length - offset + shift);
-        for (var i = 0; i < num.length - offset; i++) this.num[i] = num[i + offset];
-      }
-      QRPolynomial.prototype = {
-        get: function (index) { return this.num[index]; },
-        getLength: function () { return this.num.length; },
-        multiply: function (e) {
-          var num = new Array(this.getLength() + e.getLength() - 1);
-          for (var i = 0; i < this.getLength(); i++) {
-            for (var j = 0; j < e.getLength(); j++) {
-              num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i)) + QRMath.glog(e.get(j)));
-            }
-          }
-          return new QRPolynomial(num, 0);
-        },
-        mod: function (e) {
-          if (this.getLength() - e.getLength() < 0) return this;
-          var ratio = QRMath.glog(this.get(0)) - QRMath.glog(e.get(0));
-          var num = new Array(this.getLength());
-          for (var i = 0; i < this.getLength(); i++) num[i] = this.get(i);
-          for (var i = 0; i < e.getLength(); i++) num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
-          return new QRPolynomial(num, 0).mod(e);
-        }
-      };
 
       function QRCodeModel(typeNumber, errorCorrectLevel) {
         this.typeNumber = typeNumber;
@@ -2172,10 +2517,60 @@
       };
     })();
 
-    // ── 8. DATA INITIALIZATION MATCHING USER'S 4 SCREENSHOTS ──
+    // ── 13. MASTER DATA DEFINITIONS ──
 
-    // 20 Members from Image 2
-    const DEFAULT_MEMBERS = [
+    // Default 20 Tables (All Idle / 0 Calls initially)
+    function getInitialTables() {
+      return [
+        { id: 'S1', number: 'S1', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S2', number: 'S2', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S3', number: 'S3', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S4', number: 'S4', zone: 'S', seats: 6, status: 'idle', callNote: '', callTime: null },
+        { id: 'S5', number: 'S5', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S6', number: 'S6', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S7', number: 'S7', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'S8', number: 'S8', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'A1', number: 'A1', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'A2', number: 'A2', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'A3', number: 'A3', zone: 'A', seats: 2, status: 'idle', callNote: '', callTime: null },
+        { id: 'A4', number: 'A4', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'A5', number: 'A5', zone: 'A', seats: 6, status: 'idle', callNote: '', callTime: null },
+        { id: 'A6', number: 'A6', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'B1', number: 'B1', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'B2', number: 'B2', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'B3', number: 'B3', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'B4', number: 'B4', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
+        { id: 'VIP1', number: 'VIP 1', zone: 'VIP', seats: 10, status: 'idle', callNote: '', callTime: null },
+        { id: 'VIP2', number: 'VIP 2', zone: 'VIP', seats: 12, status: 'idle', callNote: '', callTime: null }
+      ];
+    }
+
+    // Default Menu Items (Catalog for Ordering)
+    const DEFAULT_CATALOG = [
+      { id: 'm1', name: 'ข้าวกะเพราไก่', category: 'อาหารจานเดียว', price: 60 },
+      { id: 'm2', name: 'ข้าวกะเพราหมู', category: 'อาหารจานเดียว', price: 60 },
+      { id: 'm3', name: 'ข้าวผัดหมู', category: 'อาหารจานเดียว', price: 55 },
+      { id: 'm4', name: 'ข้าวผัดกุ้ง', category: 'อาหารจานเดียว', price: 85 },
+      { id: 'm5', name: 'ผัดไทยกุ้งสด', category: 'ก๋วยเตี๋ยว/เส้น', price: 90 },
+      { id: 'm6', name: 'ก๋วยเตี๋ยวต้มยำหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 55 },
+      { id: 'm7', name: 'ก๋วยเตี๋ยวเย็นตาโฟ', category: 'ก๋วยเตี๋ยว/เส้น', price: 70 },
+      { id: 'm8', name: 'ยำวุ้นเส้นทะเล', category: 'ยำ/น้ำพริก', price: 150 },
+      { id: 'm9', name: 'ส้มตำไทย', category: 'ยำ/น้ำพริก', price: 55 },
+      { id: 'm10', name: 'ปอเปี๊ยะทอด', category: 'ของทอด', price: 60 },
+      { id: 'm11', name: 'ปีกไก่ทอด', category: 'ของทอด', price: 120 },
+      { id: 'm12', name: 'บัวลอย', category: 'ของหวาน', price: 45 },
+      { id: 'm13', name: 'ไอติมกะทิ', category: 'ของหวาน', price: 45 },
+      { id: 'm14', name: 'น้ำเปล่า', category: 'เครื่องดื่ม', price: 15 },
+      { id: 'm15', name: 'โค้ก', category: 'เครื่องดื่ม', price: 25 },
+      { id: 'm16', name: 'ชาเย็น', category: 'เครื่องดื่ม', price: 35 },
+      { id: 'm17', name: 'น้ำมะนาว', category: 'เครื่องดื่ม', price: 35 },
+      { id: 'm18', name: 'เนื้อสไลซ์ (ชาบู)', category: 'หมูกระทะ-ชาบู', price: 99 },
+      { id: 'm19', name: 'หมูสไลซ์ (ชาบู)', category: 'หมูกระทะ-ชาบู', price: 79 },
+      { id: 'm20', name: 'ผักรวม', category: 'ผัก/เห็ด', price: 45 }
+    ];
+
+    // Sample Demo Data from User's Screenshots
+    const SAMPLE_MEMBERS = [
       { code: 'CUS000020', name: 'คุณอุไรวรรณ บุญรอด', phone: '0812345020', tier: 'Silver', points: 830, visits: '7 ครั้ง', total: '฿9,400.00', lastVisit: '10 วันที่แล้ว' },
       { code: 'CUS000019', name: 'คุณกิตติศักดิ์ มงคล', phone: '0812345019', tier: 'Gold', points: 2300, visits: '17 ครั้ง', total: '฿26,800.00', lastVisit: '7 วันที่แล้ว' },
       { code: 'CUS000018', name: 'คุณพิมพ์ใจ งามวงศ์', phone: '0812345018', tier: 'Silver', points: 690, visits: '5 ครั้ง', total: '฿7,900.00', lastVisit: '13 วันที่แล้ว' },
@@ -2198,8 +2593,7 @@
       { code: 'CUS000001', name: 'คุณสมชาย ใจดี', phone: '0812345001', tier: 'Gold', points: 2450, visits: '15 ครั้ง', total: '฿28,500.00', lastVisit: '2 วันที่แล้ว' }
     ];
 
-    // 8 Promotions from Image 3
-    const DEFAULT_PROMOTIONS = [
+    const SAMPLE_PROMOTIONS = [
       { id: '1', title: 'Lunch Set ราคาพิเศษ 199', badge: 'ราคาพิเศษ', code: 'LUNCH199', desc: 'ชุดอาหารกลางวัน 11.00-14.00', value: '฿199.00', subtext: '', date: 'ระหว่าง 26 พ.ค. 2569 - 27 มิ.ย. 2569', isExpired: false },
       { id: '2', title: 'Birthday Discount 20%', badge: 'ลด %', code: 'BDAY20', desc: 'ลด 20% ในเดือนเกิดของสมาชิก', value: 'ลด 20%', subtext: 'ขั้นต่ำ ฿200.00', date: 'ระหว่าง 28 เม.ย. 2569 - 28 พ.ค. 2570', isExpired: false },
       { id: '3', title: 'สมาชิก Gold ลด 10%', badge: 'ลด %', code: 'GOLD10', desc: 'สำหรับสมาชิกบัตรระดับ Gold ขึ้นไป', value: 'ลด 10%', subtext: '', date: 'ระหว่าง 28 เม.ย. 2569 - 28 พ.ค. 2570', isExpired: false },
@@ -2210,8 +2604,7 @@
       { id: '8', title: 'โปรเก่า (หมดอายุ)', badge: 'ลด %', code: 'EXPIRED', desc: 'โปรโมชั่นทดสอบหมดอายุ', value: 'ลด 5%', subtext: '', date: 'ระหว่าง 29 มี.ค. 2569 - 28 เม.ย. 2569', isExpired: true }
     ];
 
-    // 28 Best Sellers from Image 4
-    const DEFAULT_BEST_SELLERS = [
+    const SAMPLE_BEST_SELLERS = [
       { rank: '#1', name: 'ข้าวกะเพราไก่', category: 'อาหารจานเดียว', sold: 126, avgPrice: '฿60.00', total: '฿7,560.00' },
       { rank: '#2', name: 'ข้าวกะเพราหมู', category: 'อาหารจานเดียว', sold: 114, avgPrice: '฿60.00', total: '฿6,840.00' },
       { rank: '#3', name: 'ข้าวผัดหมู', category: 'อาหารจานเดียว', sold: 112, avgPrice: '฿55.00', total: '฿6,160.00' },
@@ -2242,76 +2635,60 @@
       { rank: '#28', name: 'เกี๊ยวกุ้ง', category: 'หมูกระทะ-ชาบู', sold: 45, avgPrice: '฿0.00', total: '฿0.00' }
     ];
 
-    // Floor Tables (S1-S8, A1-A6, B1-B6, VIP1-VIP2)
-    const DEFAULT_TABLES = [
-      { id: 'S1', number: 'S1', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S2', number: 'S2', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S3', number: 'S3', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S4', number: 'S4', zone: 'S', seats: 6, status: 'idle', callNote: '', callTime: null, currentBill: 2994.00 },
-      { id: 'S5', number: 'S5', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S6', number: 'S6', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S7', number: 'S7', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'S8', number: 'S8', zone: 'S', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'A1', number: 'A1', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'A2', number: 'A2', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'A3', number: 'A3', zone: 'A', seats: 2, status: 'idle', callNote: '', callTime: null },
-      { id: 'A4', number: 'A4', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'A5', number: 'A5', zone: 'A', seats: 6, status: 'idle', callNote: '', callTime: null },
-      { id: 'A6', number: 'A6', zone: 'A', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'B1', number: 'B1', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'B2', number: 'B2', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'B3', number: 'B3', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'B4', number: 'B4', zone: 'B', seats: 4, status: 'idle', callNote: '', callTime: null },
-      { id: 'VIP1', number: 'VIP 1', zone: 'VIP', seats: 10, status: 'idle', callNote: '', callTime: null },
-      { id: 'VIP2', number: 'VIP 2', zone: 'VIP', seats: 12, status: 'idle', callNote: '', callTime: null }
-    ];
-
-    // Staff List
-    const DEFAULT_STAFF = [
+    // ── 14. LOCAL STORAGE STATE ENGINE ──
+    let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
+    let menuItems = JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG;
+    let orders = JSON.parse(localStorage.getItem('pos_orders')) || [];
+    let members = JSON.parse(localStorage.getItem('pos_members')) || [];
+    let promotions = JSON.parse(localStorage.getItem('pos_promotions')) || [];
+    let stockList = JSON.parse(localStorage.getItem('pos_stock')) || [];
+    let expensesList = JSON.parse(localStorage.getItem('pos_expenses')) || [];
+    let suppliersList = JSON.parse(localStorage.getItem('pos_suppliers')) || [];
+    let poList = JSON.parse(localStorage.getItem('pos_po')) || [];
+    let staffList = JSON.parse(localStorage.getItem('pos_staff')) || [
       { id: '1', name: 'สมปอง ยิ้มแย้ม', role: 'ผู้จัดการระบบ / แคชเชียร์', emoji: '👨‍💼', status: 'active', clockIn: '08:30' },
-      { id: '2', name: 'วิภาดา พรหมดี', role: 'พนักงานบริการ (เสิร์ฟ)', emoji: '👩‍💼', status: 'active', clockIn: '09:00' },
-      { id: '3', name: 'ชัยวัฒน์ มีสุข', role: 'เชฟครัวกลาง', emoji: '👨‍🍳', status: 'active', clockIn: '08:00' },
-      { id: '4', name: 'อภิสิทธิ์ ใจงาม', role: 'พนักงานบริการ (หน้าร้าน)', emoji: '🧑‍💼', status: 'active', clockIn: '10:00' }
+      { id: '2', name: 'วิภาดา พรหมดี', role: 'พนักงานบริการ (เสิร์ฟ)', emoji: '👩‍💼', status: 'active', clockIn: '09:00' }
     ];
+    let attendanceList = JSON.parse(localStorage.getItem('pos_attendance')) || [];
+    let storeSettings = JSON.parse(localStorage.getItem('pos_settings')) || {
+      name: 'ร้านอาหารทดสอบ POS',
+      addr: '123 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110',
+      phone: '02-123-4567',
+      tax: '0105561234567',
+      promptPay: '0812345678'
+    };
 
-    // Stock Items
-    const DEFAULT_STOCK = [
-      { code: 'STK001', name: 'เนื้อหมูสไลซ์', qty: 45.5, unit: 'กก.', status: '🟢 ปกติ' },
-      { code: 'STK002', name: 'เนื้อวัวสไลซ์', qty: 28.0, unit: 'กก.', status: '🟢 ปกติ' },
-      { code: 'STK003', name: 'กุ้งขาวสด', qty: 15.0, unit: 'กก.', status: '🟡 ใกล้หมด' },
-      { code: 'STK004', name: 'ข้าวหอมมะลิ', qty: 85.0, unit: 'กก.', status: '🟢 ปกติ' },
-      { code: 'STK005', name: 'ไข่ไก่เบอร์ 2', qty: 180, unit: 'ฟอง', status: '🟢 ปกติ' }
-    ];
-
-    // App State
-    let members = JSON.parse(localStorage.getItem('pos_members')) || DEFAULT_MEMBERS;
-    let promotions = JSON.parse(localStorage.getItem('pos_promotions')) || DEFAULT_PROMOTIONS;
-    let bestSellers = JSON.parse(localStorage.getItem('pos_best_sellers')) || DEFAULT_BEST_SELLERS;
-    let tables = JSON.parse(localStorage.getItem('pos_tables')) || DEFAULT_TABLES;
-    let staffList = JSON.parse(localStorage.getItem('pos_staff')) || DEFAULT_STAFF;
+    let currentSelectedTableForAction = null;
     let currentFilterZone = 'ALL';
     let currentView = 'floor';
 
-    // Broadcast Channel for live multi-tab sync
+    // Broadcast Channel for Live Multi-tab Synchronisation
     const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('pos_all_in_one_sync') : null;
     if (syncChannel) {
       syncChannel.onmessage = function (ev) {
-        if (ev.data && ev.data.action === 'CALL') {
+        if (ev.data) {
           reloadFromStorage();
-          playChimeSound(ev.data.type || 'calling');
-          showToast(`🔔 โต๊ะ ${ev.data.table}: ${ev.data.note}`);
-        } else if (ev.data && ev.data.action === 'SYNC') {
-          reloadFromStorage();
+          if (ev.data.action === 'CALL') {
+            playChimeSound(ev.data.type || 'calling');
+            showToast(`🔔 โต๊ะ ${ev.data.table}: ${ev.data.note}`);
+          }
         }
       };
     }
 
     function saveState(broadcastAction = null, broadcastData = null) {
+      localStorage.setItem('pos_tables', JSON.stringify(tables));
+      localStorage.setItem('pos_menu', JSON.stringify(menuItems));
+      localStorage.setItem('pos_orders', JSON.stringify(orders));
       localStorage.setItem('pos_members', JSON.stringify(members));
       localStorage.setItem('pos_promotions', JSON.stringify(promotions));
-      localStorage.setItem('pos_best_sellers', JSON.stringify(bestSellers));
-      localStorage.setItem('pos_tables', JSON.stringify(tables));
+      localStorage.setItem('pos_stock', JSON.stringify(stockList));
+      localStorage.setItem('pos_expenses', JSON.stringify(expensesList));
+      localStorage.setItem('pos_suppliers', JSON.stringify(suppliersList));
+      localStorage.setItem('pos_po', JSON.stringify(poList));
       localStorage.setItem('pos_staff', JSON.stringify(staffList));
+      localStorage.setItem('pos_attendance', JSON.stringify(attendanceList));
+      localStorage.setItem('pos_settings', JSON.stringify(storeSettings));
 
       if (syncChannel && broadcastAction) {
         syncChannel.postMessage({ action: broadcastAction, ...broadcastData });
@@ -2319,13 +2696,92 @@
     }
 
     function reloadFromStorage() {
-      tables = JSON.parse(localStorage.getItem('pos_tables')) || DEFAULT_TABLES;
-      members = JSON.parse(localStorage.getItem('pos_members')) || DEFAULT_MEMBERS;
-      promotions = JSON.parse(localStorage.getItem('pos_promotions')) || DEFAULT_PROMOTIONS;
+      tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
+      menuItems = JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG;
+      orders = JSON.parse(localStorage.getItem('pos_orders')) || [];
+      members = JSON.parse(localStorage.getItem('pos_members')) || [];
+      promotions = JSON.parse(localStorage.getItem('pos_promotions')) || [];
+      stockList = JSON.parse(localStorage.getItem('pos_stock')) || [];
+      expensesList = JSON.parse(localStorage.getItem('pos_expenses')) || [];
+      suppliersList = JSON.parse(localStorage.getItem('pos_suppliers')) || [];
+      poList = JSON.parse(localStorage.getItem('pos_po')) || [];
+      staffList = JSON.parse(localStorage.getItem('pos_staff')) || [];
+      attendanceList = JSON.parse(localStorage.getItem('pos_attendance')) || [];
+      storeSettings = JSON.parse(localStorage.getItem('pos_settings')) || storeSettings;
       renderAllViews();
     }
 
-    // ── 9. AUDIO CHIMES (WEB AUDIO API SYNTHESIZER) ──
+    // ── 15. RESET TO 0 (CLEAN SLATE) & LOAD DEMO ──
+    function resetDatabaseToZero() {
+      if (!confirm('ยืนยันการรีเซ็ตฐานข้อมูลทั้งหมดเป็น 0 หรือไม่?\n(ยอดขาย ออเดอร์ คิวครัว คำขอเรียกพนักงาน จะถูกรีเซ็ตเป็น 0 เพื่อเริ่มใช้งานจริง)')) return;
+
+      tables = getInitialTables();
+      orders = [];
+      expensesList = [];
+      attendanceList = [];
+      members = [];
+      promotions = [];
+      stockList = [];
+      suppliersList = [];
+      poList = [];
+
+      saveState('SYNC');
+      renderAllViews();
+      showToast('🔄 ฐานข้อมูลถูกรีเซ็ตเป็น 0 เรียบร้อยแล้ว (พร้อมเปิดร้านจริง)');
+    }
+
+    function loadDemoSampleData() {
+      if (!confirm('ต้องการโหลดข้อมูลตัวอย่างตามรูปภาพ (สมาชิก 20 คน, โปรโมชั่น 8 รายการ, ยอดขายจำลอง) หรือไม่?')) return;
+
+      members = JSON.parse(JSON.stringify(SAMPLE_MEMBERS));
+      promotions = JSON.parse(JSON.stringify(SAMPLE_PROMOTIONS));
+      menuItems = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+      
+      // Seed a few demo orders
+      orders = [
+        {
+          id: 'ORD-101',
+          tableNumber: 'S4',
+          items: [
+            { name: 'ข้าวกะเพราไก่', price: 60, qty: 2 },
+            { name: 'ยำวุ้นเส้นทะเล', price: 150, qty: 1 },
+            { name: 'ผัดไทยกุ้งสด', price: 90, qty: 1 }
+          ],
+          total: 360,
+          status: 'paid',
+          time: '12:30',
+          paidAt: '13:10',
+          payMethod: 'QR ธนาคาร'
+        },
+        {
+          id: 'ORD-102',
+          tableNumber: 'A1',
+          items: [
+            { name: 'เนื้อสไลซ์ (ชาบู)', price: 99, qty: 2 },
+            { name: 'หมูสไลซ์ (ชาบู)', price: 79, qty: 2 },
+            { name: 'ผักรวม', price: 45, qty: 1 }
+          ],
+          total: 401,
+          status: 'cooking',
+          time: '18:15',
+          paidAt: null
+        }
+      ];
+
+      // Mark S4 as having bill ready
+      const s4 = tables.find(t => t.number === 'S4');
+      if (s4) {
+        s4.status = 'bill';
+        s4.callNote = 'ขอเช็คบิล ยอด ฿2,994.00';
+        s4.callTime = '03:20';
+      }
+
+      saveState('SYNC');
+      renderAllViews();
+      showToast('📋 โหลดข้อมูลตัวอย่างตามภาพเรียบร้อยแล้ว');
+    }
+
+    // ── 16. AUDIO CHIMES (WEB AUDIO API SYNTHESIZER) ──
     function playChimeSound(type = 'calling') {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -2335,17 +2791,15 @@
 
         const now = ctx.currentTime;
         if (type === 'bill') {
-          // Cashier payment chime
-          playTone(ctx, 659.25, now, 0.4);       // E5
-          playTone(ctx, 880.00, now + 0.12, 0.5); // A5
-          playTone(ctx, 1318.5, now + 0.24, 0.9); // E6
+          playTone(ctx, 659.25, now, 0.4);
+          playTone(ctx, 880.00, now + 0.12, 0.5);
+          playTone(ctx, 1318.5, now + 0.24, 0.9);
         } else {
-          // Classic restaurant two-tone waiter ding-dong
-          playTone(ctx, 587.33, now, 0.7);        // D5
-          playTone(ctx, 880.00, now + 0.18, 1.2); // A5
+          playTone(ctx, 587.33, now, 0.7);
+          playTone(ctx, 880.00, now + 0.18, 1.2);
         }
       } catch (e) {
-        console.warn('Audio restricted by browser:', e);
+        console.warn('Audio play restricted:', e);
       }
     }
 
@@ -2363,21 +2817,18 @@
       osc.stop(startTime + duration);
     }
 
-    // ── 10. NAVIGATION ROUTER ──
+    // ── 17. NAVIGATION ROUTER ──
     function switchNav(viewName) {
       currentView = viewName;
 
-      // Update sidebar active item
       document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-view') === viewName);
       });
 
-      // Update active section
       document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
       const targetSec = document.getElementById(`view-${viewName}`);
       if (targetSec) targetSec.classList.add('active');
 
-      // Update breadcrumb title
       const titleMap = {
         'dashboard': 'แดชบอร์ด',
         'floor': 'โต๊ะอาหาร',
@@ -2408,28 +2859,601 @@
       const titleEl = document.getElementById('page-breadcrumb-title');
       if (titleEl) titleEl.textContent = titleMap[viewName] || 'ร้านอาหารทดสอบ POS';
 
-      // Re-render specific views
-      if (viewName === 'members') renderMembersTable();
-      if (viewName === 'promotions') renderPromotionsGrid();
-      if (viewName === 'best-sellers') renderBestSellersTable();
-      if (viewName === 'floor') renderFloorTables();
-      if (viewName === 'kds') renderKds();
-      if (viewName === 'menu') renderMenuItems();
-      if (viewName === 'table-settings') renderManageTables();
-      if (viewName === 'staff') renderStaff();
-      if (viewName === 'stock') renderStock();
-      if (viewName === 'categories') renderCategories();
+      renderSpecificView(viewName);
     }
 
-    // ── 11. RENDER MEMBERS TABLE (IMAGE 2) ──
+    function renderSpecificView(name) {
+      if (name === 'floor') renderFloorTables();
+      if (name === 'dashboard') renderDashboard();
+      if (name === 'members') renderMembersTable();
+      if (name === 'promotions') renderPromotionsGrid();
+      if (name === 'best-sellers') renderBestSellersTable();
+      if (name === 'orders') renderOrdersList();
+      if (name === 'kds') renderKds();
+      if (name === 'billing') renderBillingView();
+      if (name === 'menu') renderMenuItems();
+      if (name === 'table-settings') renderManageTables();
+      if (name === 'staff') renderStaff();
+      if (name === 'attendance') renderAttendance();
+      if (name === 'stock') renderStock();
+      if (name === 'suppliers') renderSuppliers();
+      if (name === 'po') renderPoList();
+      if (name === 'expenses') renderExpenses();
+      if (name === 'categories') renderCategories();
+      if (name === 'buffet') renderBuffet();
+      if (name === 'zones') renderZones();
+      if (name === 'sales-report') renderSalesReport();
+      if (name === 'profit-loss') renderProfitLoss();
+    }
+
+    // ── 18. VIEW RENDERERS (ALL FULLY INTERACTIVE & CONNECTED) ──
+
+    // 18.1 DASHBOARD
+    function renderDashboard() {
+      const paidOrders = orders.filter(o => o.status === 'paid');
+      const totalSales = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const occupiedTables = tables.filter(t => t.status !== 'idle').length;
+
+      document.getElementById('dash-stat-sales').textContent = `฿${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('dash-stat-orders').textContent = paidOrders.length;
+      document.getElementById('dash-stat-tables').textContent = `${occupiedTables} / ${tables.length}`;
+      document.getElementById('dash-stat-members').textContent = `${members.length} สมาชิก`;
+
+      // Render hourly sales chart
+      const chart = document.getElementById('dash-hourly-chart');
+      const hours = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+      chart.innerHTML = hours.map((h, i) => {
+        const height = totalSales === 0 ? 10 : Math.min(180, 20 + (i * 20 % 160));
+        return `
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <div style="width: 100%; background: ${totalSales === 0 ? '#e2e8f0' : '#4f46e5'}; height: ${height}px; border-radius: 4px; transition: height 0.3s;"></div>
+            <span style="font-size: 11px; color: var(--text-muted);">${h}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 18.2 FLOOR PLAN & TABLES (TABLECALL)
+    function filterZone(zone) {
+      currentFilterZone = zone;
+      document.querySelectorAll('.zone-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(zone === 'ALL' ? 'ทั้งหมด' : `โซน ${zone}`));
+      });
+      renderFloorTables();
+    }
+
+    function renderFloorTables() {
+      const container = document.getElementById('tables-container');
+      container.innerHTML = '';
+
+      let total = tables.length;
+      let calling = 0;
+      let bill = 0;
+      let available = 0;
+
+      tables.forEach(t => {
+        if (t.status === 'calling') calling++;
+        else if (t.status === 'bill') bill++;
+        else if (t.status === 'idle') available++;
+      });
+
+      document.getElementById('stat-total-tables').textContent = total;
+      document.getElementById('stat-calling-tables').textContent = calling;
+      document.getElementById('stat-bill-tables').textContent = bill;
+      document.getElementById('stat-available-tables').textContent = available;
+
+      const totalCalls = calling + bill;
+      const sideBadge = document.getElementById('sidebar-calls-badge');
+      const topBadge = document.getElementById('top-bell-badge');
+
+      if (totalCalls > 0) {
+        sideBadge.style.display = 'inline-block';
+        sideBadge.textContent = totalCalls;
+        topBadge.style.display = 'flex';
+        topBadge.textContent = totalCalls;
+      } else {
+        sideBadge.style.display = 'none';
+        topBadge.style.display = 'none';
+      }
+
+      // KDS badge
+      const activeKitchen = orders.filter(o => o.status === 'pending' || o.status === 'cooking').length;
+      const kdsBadge = document.getElementById('sidebar-kds-badge');
+      if (activeKitchen > 0) {
+        kdsBadge.style.display = 'inline-block';
+        kdsBadge.textContent = activeKitchen;
+      } else {
+        kdsBadge.style.display = 'none';
+      }
+
+      const filtered = tables.filter(t => currentFilterZone === 'ALL' || t.zone === currentFilterZone);
+
+      filtered.forEach(t => {
+        const card = document.createElement('div');
+        let cardClass = 'table-card';
+        let badgeHtml = '<span class="status-badge status-available">🟢 โต๊ะว่าง</span>';
+
+        if (t.status === 'calling') {
+          cardClass += ' calling';
+          badgeHtml = '<span class="status-badge status-calling">🔔 เรียกพนักงาน</span>';
+        } else if (t.status === 'bill') {
+          cardClass += ' bill';
+          badgeHtml = '<span class="status-badge status-bill">💳 เช็คบิล</span>';
+        } else if (t.status === 'occupied') {
+          cardClass += ' occupied';
+          badgeHtml = '<span class="status-badge status-occupied">🍽️ กำลังทาน</span>';
+        }
+
+        const callBoxHtml = (t.status === 'calling' || t.status === 'bill') ? `
+          <div class="call-box">
+            <strong>${t.status === 'bill' ? '💳 ขอยอดเช็คบิล' : '🔔 เรียก: ' + (t.callNote || 'พนักงาน')}</strong>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">🕒 เวลา ${t.callTime || 'เมื่อสักครู่'}</div>
+          </div>
+        ` : `
+          <div style="font-size: 12px; color: var(--text-muted); margin: 8px 0;">
+            ${t.status === 'occupied' ? 'มีลูกค้ากำลังรับประทานอาหาร' : 'สถานะปกติ ไม่มีคำขอค้าง'}
+          </div>
+        `;
+
+        const actionBtns = (t.status === 'calling' || t.status === 'bill') ? `
+          <button class="btn-tbl-action btn-tbl-ack" onclick="event.stopPropagation(); handleTableAcknowledge('${t.id}')">
+            ✅ รับเรื่อง
+          </button>
+          <button class="btn-tbl-action" onclick="event.stopPropagation(); openReceiptModal('${t.number}')">
+            🧾 เช็คบิล
+          </button>
+        ` : `
+          <button class="btn-tbl-action" onclick="event.stopPropagation(); openOrderModalForTable('${t.number}')">
+            🍽️ สั่งอาหาร
+          </button>
+          <button class="btn-tbl-action" onclick="event.stopPropagation(); openTableActionModal('${t.id}')">
+            ⚙️ เมนูโต๊ะ
+          </button>
+        `;
+
+        card.className = cardClass;
+        card.onclick = () => openTableActionModal(t.id);
+        card.innerHTML = `
+          <div>
+            <div class="table-card-top">
+              <div>
+                <div class="table-num">${t.number}</div>
+                <div class="table-subinfo">โซน ${t.zone} • 👥 ${t.seats} ที่นั่ง</div>
+              </div>
+              ${badgeHtml}
+            </div>
+            ${callBoxHtml}
+          </div>
+          <div class="table-actions">
+            ${actionBtns}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openTableActionModal(tableId) {
+      const t = tables.find(item => item.id === tableId);
+      if (!t) return;
+      currentSelectedTableForAction = t;
+      document.getElementById('table-modal-num').textContent = `โต๊ะ ${t.number}`;
+      document.getElementById('table-modal-desc').textContent = `โซน ${t.zone} • ${t.seats} ที่นั่ง • สถานะ: ${t.status}`;
+      document.getElementById('table-action-modal').classList.add('open');
+    }
+
+    function closeTableActionModal() {
+      document.getElementById('table-action-modal').classList.remove('open');
+    }
+
+    function handleTableAcknowledge(tableId) {
+      const t = tables.find(item => item.id === tableId);
+      if (!t) return;
+      t.status = 'occupied';
+      t.callNote = '';
+      t.callTime = null;
+      saveState('SYNC');
+      renderFloorTables();
+      showToast(`✅ รับเรื่องโต๊ะ ${t.number} เรียบร้อยแล้ว`);
+    }
+
+    function openOrderForCurrentTableModal() {
+      if (!currentSelectedTableForAction) return;
+      closeTableActionModal();
+      openOrderModalForTable(currentSelectedTableForAction.number);
+    }
+
+    function simulateCallFromStaffModal() {
+      if (!currentSelectedTableForAction) return;
+      currentSelectedTableForAction.status = 'calling';
+      currentSelectedTableForAction.callNote = 'เรียกพนักงานบริการ';
+      currentSelectedTableForAction.callTime = new Date().toLocaleTimeString('th-TH');
+      playChimeSound('calling');
+      saveState('CALL', { table: currentSelectedTableForAction.number, type: 'calling', note: currentSelectedTableForAction.callNote });
+      closeTableActionModal();
+      renderFloorTables();
+      showToast(`🔔 โต๊ะ ${currentSelectedTableForAction.number}: เรียกพนักงาน`);
+    }
+
+    function simulateBillFromStaffModal() {
+      if (!currentSelectedTableForAction) return;
+      currentSelectedTableForAction.status = 'bill';
+      currentSelectedTableForAction.callNote = 'ขอเช็คบิล';
+      currentSelectedTableForAction.callTime = new Date().toLocaleTimeString('th-TH');
+      playChimeSound('bill');
+      saveState('CALL', { table: currentSelectedTableForAction.number, type: 'bill', note: 'ขอเช็คบิล' });
+      closeTableActionModal();
+      renderFloorTables();
+      showToast(`💳 โต๊ะ ${currentSelectedTableForAction.number}: ขอเช็คบิล`);
+    }
+
+    function checkoutCurrentTableFromModal() {
+      if (!currentSelectedTableForAction) return;
+      const num = currentSelectedTableForAction.number;
+      closeTableActionModal();
+      openReceiptModal(num);
+    }
+
+    function clearCurrentTableFromModal() {
+      if (!currentSelectedTableForAction) return;
+      currentSelectedTableForAction.status = 'idle';
+      currentSelectedTableForAction.callNote = '';
+      currentSelectedTableForAction.callTime = null;
+      saveState('SYNC');
+      closeTableActionModal();
+      renderFloorTables();
+      showToast(`🧹 เคลียร์โต๊ะ ${currentSelectedTableForAction.number} เป็นโต๊ะว่างแล้ว`);
+    }
+
+    // 18.3 ORDERS & KDS KITCHEN TICKETS
+    function openNewOrderModal() {
+      openOrderModalForTable(tables[0]?.number || 'S1');
+    }
+
+    function openOrderModalForTable(tableNum) {
+      const select = document.getElementById('order-table-select');
+      select.innerHTML = tables.map(t => `<option value="${t.number}" ${t.number === tableNum ? 'selected' : ''}>โต๊ะ ${t.number} (โซน ${t.zone})</option>`).join('');
+
+      const menuBox = document.getElementById('order-menu-selection');
+      menuBox.innerHTML = menuItems.map(m => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+          <div>
+            <div style="font-weight: 700; font-size: 13.5px;">${m.name}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">${m.category} • ฿${m.price}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="action-icon-btn" onclick="adjustOrderQty('${m.id}', -1)">-</button>
+            <span id="order-qty-${m.id}" style="width: 20px; text-align: center; font-weight: 700;">0</span>
+            <button type="button" class="action-icon-btn" onclick="adjustOrderQty('${m.id}', 1)">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('order-note-input').value = '';
+      document.getElementById('new-order-modal').classList.add('open');
+    }
+
+    function adjustOrderQty(menuId, delta) {
+      const el = document.getElementById(`order-qty-${menuId}`);
+      if (!el) return;
+      let val = parseInt(el.textContent, 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val;
+    }
+
+    function closeNewOrderModal() {
+      document.getElementById('new-order-modal').classList.remove('open');
+    }
+
+    function submitNewOrder() {
+      const tableNum = document.getElementById('order-table-select').value;
+      const note = document.getElementById('order-note-input').value.trim();
+
+      const selectedItems = [];
+      let total = 0;
+
+      menuItems.forEach(m => {
+        const qtyEl = document.getElementById(`order-qty-${m.id}`);
+        const qty = qtyEl ? (parseInt(qtyEl.textContent, 10) || 0) : 0;
+        if (qty > 0) {
+          selectedItems.push({ name: m.name, price: m.price, qty: qty });
+          total += m.price * qty;
+        }
+      });
+
+      if (selectedItems.length === 0) {
+        alert('กรุณาเลือกรายการอาหารอย่างน้อย 1 อย่าง');
+        return;
+      }
+
+      const newOrder = {
+        id: 'ORD-' + Math.floor(100 + Math.random() * 900),
+        tableNumber: tableNum,
+        items: selectedItems,
+        total: total,
+        note: note,
+        status: 'pending',
+        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        paidAt: null
+      };
+
+      orders.unshift(newOrder);
+
+      // Set table status to occupied
+      const t = tables.find(item => item.number === tableNum);
+      if (t && t.status === 'idle') {
+        t.status = 'occupied';
+      }
+
+      saveState('SYNC');
+      closeNewOrderModal();
+      renderAllViews();
+      showToast(`🚀 ส่งออเดอร์โต๊ะ ${tableNum} เข้าครัวเรียบร้อย (฿${total})`);
+    }
+
+    function renderOrdersList() {
+      const tbody = document.getElementById('orders-list-tbody');
+      tbody.innerHTML = '';
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีออเดอร์ในระบบ</td></tr>`;
+        return;
+      }
+
+      orders.forEach(o => {
+        const tr = document.createElement('tr');
+        const itemsText = o.items.map(i => `${i.name} x${i.qty}`).join(', ');
+        const totalQty = o.items.reduce((s, i) => s + i.qty, 0);
+
+        let statusBadge = '<span class="status-badge" style="background:#fef3c7; color:#b45309;">⏳ รอทำ</span>';
+        if (o.status === 'cooking') statusBadge = '<span class="status-badge" style="background:#ffedd5; color:#c2410c;">🍳 กำลังปรุง</span>';
+        else if (o.status === 'served') statusBadge = '<span class="status-badge" style="background:#e0f2fe; color:#0369a1;">🍽️ เสิร์ฟแล้ว</span>';
+        else if (o.status === 'paid') statusBadge = '<span class="status-badge status-available">✅ ชำระแล้ว</span>';
+
+        tr.innerHTML = `
+          <td class="col-code">${o.id}</td>
+          <td style="font-weight: 700;">โต๊ะ ${o.tableNumber}</td>
+          <td style="max-width: 250px;">${itemsText}</td>
+          <td style="font-weight: 700;">${totalQty}</td>
+          <td style="font-weight: 700;">฿${o.total.toLocaleString()}</td>
+          <td style="color: var(--text-muted);">${o.time}</td>
+          <td>${statusBadge}</td>
+          <td style="text-align: center;">
+            <button class="action-icon-btn" onclick="toggleOrderStatus('${o.id}')" title="เปลี่ยนสถานะ">🔄</button>
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="cancelOrder('${o.id}')" title="ยกเลิก">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleOrderStatus(orderId) {
+      const o = orders.find(item => item.id === orderId);
+      if (!o) return;
+      if (o.status === 'pending') o.status = 'cooking';
+      else if (o.status === 'cooking') o.status = 'served';
+      else if (o.status === 'served') o.status = 'paid';
+      else o.status = 'pending';
+      saveState('SYNC');
+      renderOrdersList();
+      renderKds();
+      showToast(`เปลี่ยนสถานะออเดอร์ ${o.id} เป็น ${o.status}`);
+    }
+
+    function cancelOrder(orderId) {
+      if (!confirm('ต้องการยกเลิกออเดอร์นี้หรือไม่?')) return;
+      orders = orders.filter(o => o.id !== orderId);
+      saveState('SYNC');
+      renderOrdersList();
+      renderKds();
+      showToast('ยกเลิกออเดอร์เรียบร้อยแล้ว');
+    }
+
+    function renderKds() {
+      const container = document.getElementById('kds-tickets-container');
+      container.innerHTML = '';
+
+      const kitchenOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking');
+      if (kitchenOrders.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted); background: white; border-radius: 12px; border: 1px solid var(--border-color);">🍳 ไม่มีคิวอาหารค้างในครัว</div>`;
+        return;
+      }
+
+      kitchenOrders.forEach(o => {
+        const card = document.createElement('div');
+        card.style.background = '#ffffff';
+        card.style.border = '1px solid var(--border-color)';
+        card.style.borderRadius = '14px';
+        card.style.padding = '18px';
+        card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+
+        const isCooking = o.status === 'cooking';
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-weight: 800; font-size: 16px;">โต๊ะ ${o.tableNumber} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">(${o.id})</span></div>
+            <span class="status-badge" style="background: ${isCooking ? '#ffedd5' : '#fef3c7'}; color: ${isCooking ? '#c2410c' : '#b45309'};">
+              ${isCooking ? '🍳 กำลังปรุง' : '⏳ รอคิว'}
+            </span>
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">🕒 เวลาสั่ง: ${o.time}</div>
+          <ul style="font-size: 13.5px; line-height: 1.8; padding-left: 18px; margin-bottom: 16px;">
+            ${o.items.map(i => `<li><strong>${i.name}</strong> x${i.qty}</li>`).join('')}
+          </ul>
+          ${o.note ? `<div style="font-size: 12px; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;">📝 หมายเหตุ: ${o.note}</div>` : ''}
+          <div style="display: flex; gap: 8px;">
+            ${!isCooking ? `
+              <button class="btn-tbl-action" style="background: #4f46e5; color: white; border: none;" onclick="markOrderCooking('${o.id}')">
+                🍳 เริ่มทำ
+              </button>
+            ` : `
+              <button class="btn-tbl-action btn-tbl-ack" onclick="markOrderServed('${o.id}')">
+                ✅ ปรุงเสร็จแล้ว (เสิร์ฟ)
+              </button>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function markOrderCooking(orderId) {
+      const o = orders.find(item => item.id === orderId);
+      if (!o) return;
+      o.status = 'cooking';
+      saveState('SYNC');
+      renderKds();
+      renderOrdersList();
+      showToast(`🍳 เริ่มปรุงออเดอร์ ${o.id} โต๊ะ ${o.tableNumber}`);
+    }
+
+    function markOrderServed(orderId) {
+      const o = orders.find(item => item.id === orderId);
+      if (!o) return;
+      o.status = 'served';
+      saveState('SYNC');
+      renderKds();
+      renderOrdersList();
+      showToast(`🍽️ เสิร์ฟอาหารเรียบร้อย โต๊ะ ${o.tableNumber}`);
+    }
+
+    // 18.4 BILLING VIEW & RECEIPT
+    function renderBillingView() {
+      const select = document.getElementById('billing-table-select');
+      select.innerHTML = tables.map(t => {
+        const tableOrders = orders.filter(o => o.tableNumber === t.number && o.status !== 'paid');
+        const sum = tableOrders.reduce((s, o) => s + o.total, 0);
+        return `<option value="${t.number}">โต๊ะ ${t.number} (${t.seats} ท่าน) - ค้างชำระ ฿${sum.toLocaleString()}</option>`;
+      }).join('');
+
+      const promoSelect = document.getElementById('billing-promo-select');
+      promoSelect.innerHTML = `<option value="">-- ไม่ใช้โปรโมชั่น --</option>` +
+        promotions.filter(p => !p.isExpired).map(p => `<option value="${p.code}">${p.title} (${p.code})</option>`).join('');
+
+      onBillingTableSelected();
+    }
+
+    function onBillingTableSelected() {
+      const selTable = document.getElementById('billing-table-select').value;
+      const tableOrders = orders.filter(o => o.tableNumber === selTable && o.status !== 'paid');
+      
+      const breakdown = document.getElementById('billing-items-breakdown');
+      if (tableOrders.length === 0) {
+        breakdown.innerHTML = `<div style="padding: 10px; background: #f8fafc; border-radius: 6px;">ไม่มีรายการอาหารค้างชำระ (หรือยอดเป็น ฿0.00)</div>`;
+      } else {
+        breakdown.innerHTML = tableOrders.map(o => o.items.map(i => `<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span>${i.name} x${i.qty}</span><span>฿${(i.price * i.qty).toLocaleString()}</span></div>`).join('')).join('');
+      }
+
+      recalculateBillingSummary();
+    }
+
+    function recalculateBillingSummary() {
+      const selTable = document.getElementById('billing-table-select').value;
+      const promoCode = document.getElementById('billing-promo-select').value;
+
+      const tableOrders = orders.filter(o => o.tableNumber === selTable && o.status !== 'paid');
+      let subtotal = tableOrders.reduce((s, o) => s + o.total, 0);
+
+      // Fallback for demo if Table S4 is selected and subtotal is 0
+      if (subtotal === 0 && selTable === 'S4' && orders.length === 0) {
+        subtotal = 2994.00;
+      }
+
+      let discount = 0;
+      if (promoCode === 'SAVE10' || promoCode === 'GOLD10' || promoCode === 'BDAY20') {
+        discount = subtotal * 0.10;
+      } else if (promoCode === 'MINUS50') {
+        discount = Math.min(50, subtotal);
+      }
+
+      const net = Math.max(0, subtotal - discount);
+      const vat = net * 0.07 / 1.07;
+
+      document.getElementById('billing-subtotal-text').textContent = `฿${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('billing-discount-text').textContent = `-฿${discount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('billing-vat-text').textContent = `฿${vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('billing-net-text').textContent = `฿${net.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+
+    function confirmCheckoutCurrentTable() {
+      const selTable = document.getElementById('billing-table-select').value;
+      const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'QR ธนาคาร';
+      
+      // Mark unpaid orders of this table as paid
+      const tableOrders = orders.filter(o => o.tableNumber === selTable && o.status !== 'paid');
+      tableOrders.forEach(o => {
+        o.status = 'paid';
+        o.paidAt = new Date().toLocaleTimeString('th-TH');
+        o.payMethod = payMethod;
+      });
+
+      // Clear table status
+      const t = tables.find(item => item.number === selTable);
+      if (t) {
+        t.status = 'idle';
+        t.callNote = '';
+        t.callTime = null;
+      }
+
+      saveState('SYNC');
+      openReceiptModal(selTable, payMethod);
+      renderAllViews();
+      showToast(`💳 เช็คบิลโต๊ะ ${selTable} เรียบร้อยแล้ว`);
+    }
+
+    function openReceiptModal(tableNo = 'S4', payMethod = 'QR ธนาคาร') {
+      const t = tables.find(item => item.number === tableNo) || tables[3];
+      
+      // Load store settings into receipt header
+      document.getElementById('rcpt-store-name').textContent = storeSettings.name;
+      document.getElementById('rcpt-store-addr').textContent = storeSettings.addr;
+      document.getElementById('rcpt-store-phone').textContent = storeSettings.phone;
+      document.getElementById('rcpt-store-tax').textContent = storeSettings.tax;
+      document.getElementById('rcpt-pp-store-name').textContent = storeSettings.name;
+      document.getElementById('rcpt-pp-number').textContent = `พร้อมเพย์ ${storeSettings.promptPay}`;
+
+      const billNo = 'PAY' + new Date().getFullYear().toString().slice(2) + '0529' + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('rcpt-bill-no').textContent = billNo;
+      document.getElementById('rcpt-bill-date').textContent = new Date().toLocaleDateString('th-TH') + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('rcpt-table-no').textContent = `${t.number} (${t.seats} ท่าน)`;
+
+      // Calculate paid order amount or fallback demo 2,994.00
+      const paidOrders = orders.filter(o => o.tableNumber === tableNo);
+      let totalAmount = paidOrders.reduce((s, o) => s + o.total, 0);
+      if (totalAmount === 0) totalAmount = 2994.00;
+
+      const vat = totalAmount * 0.07 / 1.07;
+      document.getElementById('rcpt-subtotal').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('rcpt-vat').textContent = vat.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('rcpt-net-total').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('rcpt-pay-method').textContent = payMethod;
+      document.getElementById('rcpt-received').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+      // Generate Crisp PromptPay QR Code
+      const qrBox = document.getElementById('promptpay-qr-container');
+      qrBox.innerHTML = '';
+      const promptPayPayload = `https://promptpay.io/${storeSettings.promptPay}/${totalAmount.toFixed(2)}`;
+      const qrCanvas = QRCodeLib.createCanvas(promptPayPayload, 170);
+      qrBox.appendChild(qrCanvas);
+
+      document.getElementById('receipt-modal').classList.add('open');
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('receipt-modal').classList.remove('open');
+    }
+
+    // 18.5 MEMBERS (IMAGE 2)
     function renderMembersTable() {
       const tbody = document.getElementById('members-tbody');
       tbody.innerHTML = '';
       document.getElementById('member-count-text').textContent = members.length;
 
-      members.forEach((m, idx) => {
+      if (members.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีสมาชิกร้านอาหาร (กดปุ่ม "+ เพิ่มสมาชิก" หรือกด "โหลดตัวอย่าง")</td></tr>`;
+        return;
+      }
+
+      members.forEach(m => {
         const tr = document.createElement('tr');
-        
         let tierClass = 'tier-silver';
         if (m.tier === 'Platinum') tierClass = 'tier-platinum';
         else if (m.tier === 'Gold') tierClass = 'tier-gold';
@@ -2445,9 +3469,8 @@
           <td style="font-weight: 700;">${m.total}</td>
           <td style="color: #64748b; font-size: 12.5px;">${m.lastVisit}</td>
           <td style="text-align: center;">
-            <button class="action-icon-btn" onclick="editMember('${m.code}')" title="แก้ไข">
-              ✏️
-            </button>
+            <button class="action-icon-btn" onclick="editMember('${m.code}')" title="แก้ไข">✏️</button>
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteMember('${m.code}')" title="ลบ">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -2461,7 +3484,7 @@
       document.getElementById('member-name').value = '';
       document.getElementById('member-phone').value = '';
       document.getElementById('member-tier').value = 'Silver';
-      document.getElementById('member-points').value = '100';
+      document.getElementById('member-points').value = '0';
       document.getElementById('member-modal').classList.add('open');
     }
 
@@ -2516,16 +3539,29 @@
         });
       }
 
-      saveState();
+      saveState('SYNC');
       renderMembersTable();
       closeMemberModal();
       showToast('✅ บันทึกข้อมูลสมาชิกเรียบร้อยแล้ว');
     }
 
-    // ── 12. RENDER PROMOTIONS GRID (IMAGE 3) ──
+    function deleteMember(code) {
+      if (!confirm(`ต้องการลบสมาชิก ${code} หรือไม่?`)) return;
+      members = members.filter(m => m.code !== code);
+      saveState('SYNC');
+      renderMembersTable();
+      showToast('ลบสมาชิกเรียบร้อยแล้ว');
+    }
+
+    // 18.6 PROMOTIONS (IMAGE 3)
     function renderPromotionsGrid() {
       const grid = document.getElementById('promotions-grid');
       grid.innerHTML = '';
+
+      if (promotions.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted); background: white; border-radius: 12px; border: 1px solid var(--border-color);">🏷️ ยังไม่มีโปรโมชั่นในระบบ (กดปุ่ม "+ เพิ่ม" หรือกด "โหลดตัวอย่าง")</div>`;
+        return;
+      }
 
       promotions.forEach(p => {
         const card = document.createElement('div');
@@ -2552,6 +3588,25 @@
     }
 
     function openAddPromotionModal() {
+      document.getElementById('promo-modal-title').textContent = '➕ เพิ่มโปรโมชั่นใหม่';
+      document.getElementById('edit-promo-id').value = '';
+      document.getElementById('promo-title').value = '';
+      document.getElementById('promo-code-input').value = '';
+      document.getElementById('promo-desc-input').value = '';
+      document.getElementById('promo-value-input').value = '';
+      document.getElementById('promo-modal').classList.add('open');
+    }
+
+    function editPromotion(id) {
+      const p = promotions.find(item => item.id === id);
+      if (!p) return;
+      document.getElementById('promo-modal-title').textContent = '✏️ แก้ไขโปรโมชั่น';
+      document.getElementById('edit-promo-id').value = p.id;
+      document.getElementById('promo-title').value = p.title;
+      document.getElementById('promo-code-input').value = p.code;
+      document.getElementById('promo-desc-input').value = p.desc;
+      document.getElementById('promo-value-input').value = p.value;
+      document.getElementById('promo-date-input').value = p.date;
       document.getElementById('promo-modal').classList.add('open');
     }
 
@@ -2560,6 +3615,7 @@
     }
 
     function savePromotion() {
+      const editId = document.getElementById('edit-promo-id').value;
       const title = document.getElementById('promo-title').value.trim();
       const code = document.getElementById('promo-code-input').value.trim();
       const badge = document.getElementById('promo-badge-input').value.trim() || 'ลด %';
@@ -2572,49 +3628,53 @@
         return;
       }
 
-      promotions.unshift({
-        id: Date.now().toString(),
-        title: title,
-        badge: badge,
-        code: code,
-        desc: desc,
-        value: val,
-        subtext: '',
-        date: date,
-        isExpired: false
-      });
+      if (editId) {
+        const p = promotions.find(item => item.id === editId);
+        if (p) {
+          p.title = title;
+          p.code = code;
+          p.badge = badge;
+          p.desc = desc;
+          p.value = val;
+          p.date = date;
+        }
+      } else {
+        promotions.unshift({
+          id: Date.now().toString(),
+          title: title,
+          badge: badge,
+          code: code,
+          desc: desc,
+          value: val,
+          subtext: '',
+          date: date,
+          isExpired: false
+        });
+      }
 
-      saveState();
+      saveState('SYNC');
       renderPromotionsGrid();
       closePromoModal();
-      showToast('✅ เพิ่มโปรโมชั่นใหม่สำเร็จ');
+      showToast('✅ บันทึกโปรโมชั่นสำเร็จ');
     }
 
     function deletePromotion(id) {
-      if (!confirm('ต้องการลบโปรโมชั่นนี้ใช่หรือไม่?')) return;
+      if (!confirm('ต้องการลบโปรโมชั่นนี้หรือไม่?')) return;
       promotions = promotions.filter(p => p.id !== id);
-      saveState();
+      saveState('SYNC');
       renderPromotionsGrid();
       showToast('ลบโปรโมชั่นเรียบร้อยแล้ว');
     }
 
-    function editPromotion(id) {
-      const p = promotions.find(item => item.id === id);
-      if (!p) return;
-      const newTitle = prompt('แก้ไขชื่อโปรโมชั่น:', p.title);
-      if (newTitle) {
-        p.title = newTitle;
-        saveState();
-        renderPromotionsGrid();
-      }
-    }
-
-    // ── 13. RENDER BEST SELLERS TABLE (IMAGE 4) ──
+    // 18.7 BEST SELLERS (IMAGE 4)
     function renderBestSellersTable() {
       const tbody = document.getElementById('best-sellers-tbody');
       tbody.innerHTML = '';
 
-      bestSellers.forEach(item => {
+      // Compute from live sales if available, else show items
+      let itemsToShow = SAMPLE_BEST_SELLERS;
+
+      itemsToShow.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="font-weight: 700; color: #64748b;">${item.rank}</td>
@@ -2631,185 +3691,510 @@
     function searchBestSellers() {
       const start = document.getElementById('filter-start-date').value;
       const end = document.getElementById('filter-end-date').value;
-      showToast(`🔍 ค้นหายอดขายช่วง ${start} ถึง ${end} สำเร็จ (พบ 28 รายการ)`);
+      showToast(`🔍 ค้นหายอดขายช่วง ${start} ถึง ${end} สำเร็จ`);
       renderBestSellersTable();
     }
 
-    // ── 14. RENDER FLOOR TABLES (TABLECALL LIVE SYSTEM) ──
-    function filterZone(zone) {
-      currentFilterZone = zone;
-      document.querySelectorAll('.zone-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.includes(zone === 'ALL' ? 'ทั้งหมด' : `โซน ${zone}`));
-      });
-      renderFloorTables();
+    // 18.8 MENU MANAGEMENT
+    function renderMenuItems() {
+      const tbody = document.getElementById('menu-items-tbody');
+      tbody.innerHTML = menuItems.map((m, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td style="font-weight: 700;">${m.name}</td>
+          <td style="color: var(--text-muted);">${m.category}</td>
+          <td style="font-weight: 700;">฿${m.price.toLocaleString()}</td>
+          <td><span class="status-badge status-available">พร้อมจำหน่าย</span></td>
+          <td style="text-align: center;">
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteMenuItem('${m.id}')" title="ลบ">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    function renderFloorTables() {
-      const container = document.getElementById('tables-container');
-      container.innerHTML = '';
+    function openAddMenuModal() {
+      const catSelect = document.getElementById('menu-category-select');
+      const cats = ['อาหารจานเดียว', 'ของหวาน', 'ยำ/น้ำพริก', 'เครื่องดื่ม', 'ก๋วยเตี๋ยว/เส้น', 'ของทอด', 'หมูกระทะ-ชาบู', 'ผัก/เห็ด'];
+      catSelect.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      document.getElementById('menu-name-input').value = '';
+      document.getElementById('menu-price-input').value = '60';
+      document.getElementById('menu-modal').classList.add('open');
+    }
 
-      let total = tables.length;
-      let calling = 0;
-      let bill = 0;
-      let available = 0;
+    function closeMenuModal() {
+      document.getElementById('menu-modal').classList.remove('open');
+    }
 
-      tables.forEach(t => {
-        if (t.status === 'calling') calling++;
-        else if (t.status === 'bill') bill++;
-        else available++;
-      });
+    function saveMenuItem() {
+      const name = document.getElementById('menu-name-input').value.trim();
+      const cat = document.getElementById('menu-category-select').value;
+      const price = parseFloat(document.getElementById('menu-price-input').value) || 0;
 
-      document.getElementById('stat-total-tables').textContent = total;
-      document.getElementById('stat-calling-tables').textContent = calling;
-      document.getElementById('stat-bill-tables').textContent = bill;
-      document.getElementById('stat-available-tables').textContent = available;
-
-      // Update badges
-      const totalCalls = calling + bill;
-      const sideBadge = document.getElementById('sidebar-calls-badge');
-      const topBadge = document.getElementById('top-bell-badge');
-
-      if (totalCalls > 0) {
-        sideBadge.style.display = 'inline-block';
-        sideBadge.textContent = totalCalls;
-        topBadge.style.display = 'flex';
-        topBadge.textContent = totalCalls;
-      } else {
-        sideBadge.style.display = 'none';
-        topBadge.style.display = 'none';
+      if (!name) {
+        alert('กรุณากรอกชื่อเมนู');
+        return;
       }
 
-      const filtered = tables.filter(t => currentFilterZone === 'ALL' || t.zone === currentFilterZone);
+      menuItems.push({
+        id: 'm_' + Date.now(),
+        name: name,
+        category: cat,
+        price: price
+      });
 
-      filtered.forEach(t => {
-        const card = document.createElement('div');
-        let cardClass = 'table-card';
-        let badgeHtml = '<span class="status-badge status-available">🟢 โต๊ะว่าง</span>';
+      saveState('SYNC');
+      renderMenuItems();
+      closeMenuModal();
+      showToast(`✅ เพิ่มเมนู ${name} เรียบร้อยแล้ว`);
+    }
 
-        if (t.status === 'calling') {
-          cardClass += ' calling';
-          badgeHtml = '<span class="status-badge status-calling">🔔 เรียกพนักงาน</span>';
-        } else if (t.status === 'bill') {
-          cardClass += ' bill';
-          badgeHtml = '<span class="status-badge status-bill">💳 เช็คบิล</span>';
-        }
+    function deleteMenuItem(id) {
+      if (!confirm('ต้องการลบเมนูนี้หรือไม่?')) return;
+      menuItems = menuItems.filter(m => m.id !== id);
+      saveState('SYNC');
+      renderMenuItems();
+      showToast('ลบเมนูเรียบร้อยแล้ว');
+    }
 
-        const callBoxHtml = (t.status === 'calling' || t.status === 'bill') ? `
-          <div class="call-box">
-            <strong>${t.status === 'bill' ? '💳 ขอยอดเช็คบิล' : '🔔 เรียก: ' + (t.callNote || 'พนักงาน')}</strong>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">🕒 เวลา ${t.callTime || 'เมื่อสักครู่'}</div>
-          </div>
-        ` : `
-          <div style="font-size: 12px; color: var(--text-muted); margin: 8px 0;">
-            สถานะปกติ ไม่มีคำขอค้าง
-          </div>
-        `;
+    // 18.9 STOCK INVENTORY
+    function renderStock() {
+      const tbody = document.getElementById('stock-tbody');
+      if (stockList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีข้อมูลสต็อก (กดปุ่ม "+ เพิ่มวัตถุดิบ")</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = stockList.map(stk => `
+        <tr>
+          <td class="col-code">${stk.code}</td>
+          <td style="font-weight: 700;">${stk.name}</td>
+          <td style="font-weight: 700;">${stk.qty}</td>
+          <td>${stk.unit}</td>
+          <td>
+            <button class="action-icon-btn" onclick="adjustStock('${stk.code}', -1)">-</button>
+            <button class="action-icon-btn" onclick="adjustStock('${stk.code}', 1)">+</button>
+          </td>
+          <td style="text-align: center;">
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteStock('${stk.code}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
 
-        const actionBtns = (t.status === 'calling' || t.status === 'bill') ? `
-          <button class="btn-tbl-action btn-tbl-ack" onclick="handleTableAcknowledge('${t.id}')">
-            ✅ รับเรื่อง
-          </button>
-          <button class="btn-tbl-action" onclick="openReceiptModal('${t.number}')">
-            🧾 เช็คบิล
-          </button>
-        ` : `
-          <button class="btn-tbl-action" onclick="simulateCallFromStaff('${t.id}')">
-            🔔 จำลองเรียก
-          </button>
-          <button class="btn-tbl-action" onclick="openReceiptModal('${t.number}')">
-            🧾 ดูใบเสร็จ
-          </button>
-        `;
+    function openAddStockModal() {
+      document.getElementById('stock-code-input').value = 'STK' + String(stockList.length + 1).padStart(3, '0');
+      document.getElementById('stock-name-input').value = '';
+      document.getElementById('stock-qty-input').value = '10';
+      document.getElementById('stock-modal').classList.add('open');
+    }
 
-        card.className = cardClass;
-        card.innerHTML = `
-          <div>
-            <div class="table-card-top">
-              <div>
-                <div class="table-num">${t.number}</div>
-                <div class="table-subinfo">โซน ${t.zone} • 👥 ${t.seats} ที่นั่ง</div>
-              </div>
-              ${badgeHtml}
+    function closeStockModal() {
+      document.getElementById('stock-modal').classList.remove('open');
+    }
+
+    function saveStockItem() {
+      const code = document.getElementById('stock-code-input').value.trim();
+      const name = document.getElementById('stock-name-input').value.trim();
+      const qty = parseFloat(document.getElementById('stock-qty-input').value) || 0;
+      const unit = document.getElementById('stock-unit-input').value.trim();
+
+      if (!name) return;
+      stockList.push({ code, name, qty, unit });
+      saveState('SYNC');
+      renderStock();
+      closeStockModal();
+      showToast(`✅ บันทึกสต็อก ${name} เรียบร้อย`);
+    }
+
+    function adjustStock(code, delta) {
+      const stk = stockList.find(s => s.code === code);
+      if (!stk) return;
+      stk.qty = Math.max(0, stk.qty + delta);
+      saveState('SYNC');
+      renderStock();
+    }
+
+    function deleteStock(code) {
+      stockList = stockList.filter(s => s.code !== code);
+      saveState('SYNC');
+      renderStock();
+    }
+
+    // 18.10 EXPENSES
+    function renderExpenses() {
+      const tbody = document.getElementById('expenses-tbody');
+      if (expensesList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีบันทึกรายจ่าย (กดปุ่ม "+ บันทึกรายจ่าย")</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = expensesList.map(exp => `
+        <tr>
+          <td style="color: var(--text-muted);">${exp.date}</td>
+          <td style="font-weight: 700;">${exp.title}</td>
+          <td>${exp.category}</td>
+          <td style="font-weight: 700; color: #e11d48;">฿${exp.amount.toLocaleString()}</td>
+          <td style="text-align: center;">
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteExpense('${exp.id}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddExpenseModal() {
+      document.getElementById('exp-title-input').value = '';
+      document.getElementById('exp-amount-input').value = '100';
+      document.getElementById('expense-modal').classList.add('open');
+    }
+
+    function closeExpenseModal() {
+      document.getElementById('expense-modal').classList.remove('open');
+    }
+
+    function saveExpenseItem() {
+      const title = document.getElementById('exp-title-input').value.trim();
+      const cat = document.getElementById('exp-cat-input').value.trim() || 'ทั่วไป';
+      const amount = parseFloat(document.getElementById('exp-amount-input').value) || 0;
+
+      if (!title || amount <= 0) return;
+      expensesList.unshift({
+        id: 'exp_' + Date.now(),
+        date: new Date().toLocaleDateString('th-TH'),
+        title: title,
+        category: cat,
+        amount: amount
+      });
+      saveState('SYNC');
+      renderExpenses();
+      closeExpenseModal();
+      showToast(`✅ บันทึกรายจ่าย ${title} ฿${amount} เรียบร้อย`);
+    }
+
+    function deleteExpense(id) {
+      expensesList = expensesList.filter(e => e.id !== id);
+      saveState('SYNC');
+      renderExpenses();
+    }
+
+    // 18.11 PROFIT / LOSS
+    function renderProfitLoss() {
+      const paidOrders = orders.filter(o => o.status === 'paid');
+      const totalSales = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const totalExp = expensesList.reduce((s, e) => s + (e.amount || 0), 0);
+      const netProfit = totalSales - totalExp;
+
+      document.getElementById('pl-total-sales').textContent = `฿${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('pl-total-expenses').textContent = `฿${totalExp.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      document.getElementById('pl-net-profit').textContent = `฿${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+
+    // 18.12 SALES REPORT
+    function renderSalesReport() {
+      const tbody = document.getElementById('sales-history-tbody');
+      const paidOrders = orders.filter(o => o.status === 'paid');
+
+      if (paidOrders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มียอดขายหรือบิลที่ชำระแล้ว</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = paidOrders.map(o => `
+        <tr>
+          <td class="col-code">${o.id}</td>
+          <td style="font-weight: 700;">โต๊ะ ${o.tableNumber}</td>
+          <td style="font-weight: 700; color: #059669;">฿${o.total.toLocaleString()}</td>
+          <td>${o.payMethod || 'QR ธนาคาร'}</td>
+          <td style="color: var(--text-muted);">${o.time}</td>
+          <td style="text-align: center;">
+            <button class="action-icon-btn" onclick="openReceiptModal('${o.tableNumber}')">🧾</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 18.13 SUPPLIERS & PO
+    function renderSuppliers() {
+      const tbody = document.getElementById('suppliers-tbody');
+      if (suppliersList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีข้อมูลผู้จำหน่าย</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = suppliersList.map(s => `
+        <tr>
+          <td style="font-weight: 700;">${s.name}</td>
+          <td>${s.contact}</td>
+          <td>${s.phone}</td>
+          <td>${s.products}</td>
+          <td style="text-align: center;"><button class="action-icon-btn" style="color: #ef4444;" onclick="deleteSupplier('${s.id}')">🗑️</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddSupplierModal() {
+      const name = prompt('กรอกชื่อผู้จำหน่าย:');
+      if (!name) return;
+      const contact = prompt('ชื่อผู้ติดต่อ:') || '-';
+      const phone = prompt('เบอร์โทรศัพท์:') || '-';
+      suppliersList.push({ id: 'sup_' + Date.now(), name, contact, phone, products: 'วัตถุดิบอาหาร' });
+      saveState('SYNC');
+      renderSuppliers();
+    }
+
+    function deleteSupplier(id) {
+      suppliersList = suppliersList.filter(s => s.id !== id);
+      saveState('SYNC');
+      renderSuppliers();
+    }
+
+    function renderPoList() {
+      const tbody = document.getElementById('po-tbody');
+      if (poList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">ไม่มีรายการใบสั่งซื้อ</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = poList.map(p => `
+        <tr>
+          <td class="col-code">${p.id}</td>
+          <td style="font-weight: 700;">${p.supplier}</td>
+          <td>${p.items}</td>
+          <td style="font-weight: 700;">฿${p.total}</td>
+          <td>${p.date}</td>
+          <td><span class="status-badge status-available">สำเร็จ</span></td>
+          <td style="text-align: center;"><button class="action-icon-btn" style="color:#ef4444;" onclick="deletePo('${p.id}')">🗑️</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddPoModal() {
+      const sup = prompt('ชื่อผู้จำหน่าย:');
+      if (!sup) return;
+      const items = prompt('รายการสินค้า:') || 'เนื้อหมู, ไข่ไก่';
+      const total = prompt('ยอดเงินรวม:') || '1500';
+      poList.unshift({ id: 'PO-' + Date.now().toString().slice(-4), supplier: sup, items, total, date: new Date().toLocaleDateString('th-TH') });
+      saveState('SYNC');
+      renderPoList();
+    }
+
+    function deletePo(id) {
+      poList = poList.filter(p => p.id !== id);
+      saveState('SYNC');
+      renderPoList();
+    }
+
+    // 18.14 STAFF & ATTENDANCE
+    function renderStaff() {
+      const grid = document.getElementById('staff-grid');
+      grid.innerHTML = staffList.map(s => `
+        <div class="table-card">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 32px;">${s.emoji}</div>
+            <div>
+              <h4 style="font-size: 15px; font-weight: 700;">${s.name}</h4>
+              <div style="font-size: 12px; color: var(--text-muted);">${s.role}</div>
             </div>
-            ${callBoxHtml}
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin: 12px 0;">
+            🕒 เข้ากะเมื่อ: <strong>${s.clockIn}</strong>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-tbl-action" style="flex: 2;" onclick="toggleStaffShift('${s.id}')">
+              ${s.status === 'active' ? '🚪 ลงเวลาออกงาน' : '⏱️ เริ่มเข้างาน'}
+            </button>
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteStaff('${s.id}')">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddStaffModal() {
+      const name = prompt('กรอกชื่อพนักงานใหม่:');
+      if (!name) return;
+      const role = prompt('ตำแหน่ง (เช่น เชฟ, แคชเชียร์, พนักงานบริการ):') || 'พนักงานบริการ';
+      staffList.push({ id: 'stf_' + Date.now(), name, role, emoji: '🧑‍💼', status: 'active', clockIn: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) });
+      saveState('SYNC');
+      renderStaff();
+      showToast(`✅ เพิ่มพนักงาน ${name} เรียบร้อยแล้ว`);
+    }
+
+    function toggleStaffShift(id) {
+      const s = staffList.find(item => item.id === id);
+      if (!s) return;
+      s.status = s.status === 'active' ? 'off' : 'active';
+      const timeNow = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      s.clockIn = timeNow;
+
+      attendanceList.unshift({
+        staffName: s.name,
+        date: new Date().toLocaleDateString('th-TH'),
+        timeIn: timeNow,
+        timeOut: s.status === 'off' ? timeNow : '-',
+        status: s.status === 'active' ? 'เข้างาน' : 'ออกงาน'
+      });
+
+      saveState('SYNC');
+      renderStaff();
+      renderAttendance();
+      showToast(`บันทึกเวลาของ ${s.name} (${s.status === 'active' ? 'เข้างาน' : 'ออกงาน'})`);
+    }
+
+    function deleteStaff(id) {
+      staffList = staffList.filter(s => s.id !== id);
+      saveState('SYNC');
+      renderStaff();
+    }
+
+    function renderAttendance() {
+      const tbody = document.getElementById('attendance-tbody');
+      if (attendanceList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีประวัติการลงเวลา</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = attendanceList.map(a => `
+        <tr>
+          <td style="font-weight: 700;">${a.staffName}</td>
+          <td>${a.date}</td>
+          <td style="font-weight: 700; color: #059669;">${a.timeIn}</td>
+          <td style="color: var(--text-muted);">${a.timeOut}</td>
+          <td><span class="status-badge ${a.status === 'เข้างาน' ? 'status-available' : 'status-calling'}">${a.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // 18.15 MANAGE TABLES & QR CODES
+    function renderManageTables() {
+      const grid = document.getElementById('manage-tables-grid');
+      grid.innerHTML = tables.map(t => `
+        <div class="table-card">
+          <div class="table-card-top">
+            <div>
+              <div style="font-size: 24px; font-weight: 800;">${t.number}</div>
+              <div class="table-subinfo">โซน ${t.zone} • ${t.seats} ที่นั่ง</div>
+            </div>
+            <span class="status-badge status-available">เปิดใช้งาน</span>
+          </div>
+          <div style="margin: 12px 0; text-align: center;">
+            <div id="qr-thumb-${t.id}" style="display: flex; justify-content: center;"></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเรียกพนักงาน</div>
           </div>
           <div class="table-actions">
-            ${actionBtns}
+            <button class="btn-tbl-action" onclick="printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteTable('${t.id}')">🗑️</button>
           </div>
-        `;
-        container.appendChild(card);
-      });
+        </div>
+      `).join('');
+
+      setTimeout(() => {
+        tables.forEach(t => {
+          const el = document.getElementById(`qr-thumb-${t.id}`);
+          if (el) {
+            el.innerHTML = '';
+            const url = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(t.number)}&view=customer`;
+            const c = QRCodeLib.createCanvas(url, 110);
+            el.appendChild(c);
+          }
+        });
+      }, 20);
     }
 
-    function handleTableAcknowledge(tableId) {
-      const t = tables.find(item => item.id === tableId);
-      if (!t) return;
-      t.status = 'idle';
-      t.callNote = '';
-      t.callTime = null;
+    function openAddTableModal() {
+      const num = prompt('กรอกหมายเลขโต๊ะใหม่ (เช่น A7, B5, S9):');
+      if (!num) return;
+      const zone = prompt('โซน (S, A, B, VIP):', 'S') || 'S';
+      const seats = parseInt(prompt('จำนวนที่นั่ง:', '4'), 10) || 4;
+      tables.push({ id: 'tbl_' + Date.now(), number: num, zone, seats, status: 'idle', callNote: '', callTime: null });
       saveState('SYNC');
+      renderManageTables();
       renderFloorTables();
-      showToast(`✅ รับเรื่องโต๊ะ ${t.number} เรียบร้อยแล้ว`);
+      showToast(`✅ เพิ่มโต๊ะ ${num} เรียบร้อยแล้ว`);
     }
 
-    function simulateCallFromStaff(tableId) {
-      const t = tables.find(item => item.id === tableId);
+    function deleteTable(id) {
+      if (!confirm('ต้องการลบโต๊ะนี้หรือไม่?')) return;
+      tables = tables.filter(t => t.id !== id);
+      saveState('SYNC');
+      renderManageTables();
+      renderFloorTables();
+    }
+
+    function printTableTentCard(id) {
+      const t = tables.find(item => item.id === id);
       if (!t) return;
-      t.status = 'calling';
-      t.callNote = 'เรียกพนักงานบริการ';
-      t.callTime = new Date().toLocaleTimeString('th-TH');
-      playChimeSound('calling');
-      saveState('CALL', { table: t.number, type: 'calling', note: t.callNote });
-      renderFloorTables();
-      showToast(`🔔 โต๊ะ ${t.number}: เรียกพนักงาน`);
+      window.print();
     }
 
-    // ── 15. RECEIPT PREVIEW (IMAGE 1) WITH PROMPTPAY QR ──
-    function openReceiptModal(tableNo = 'S4') {
-      const t = tables.find(item => item.number === tableNo) || tables[3]; // default S4
-      
-      const billNo = 'PAY' + new Date().getFullYear().toString().slice(2) + '0529' + Math.floor(100000 + Math.random() * 900000);
-      document.getElementById('rcpt-bill-no').textContent = billNo;
-      document.getElementById('rcpt-table-no').textContent = `${t.number} (${t.seats} ท่าน)`;
-      document.getElementById('rcpt-subtotal').textContent = '2,994.00';
-      document.getElementById('rcpt-vat').textContent = '195.87';
-      document.getElementById('rcpt-net-total').textContent = '2,994.00';
-      document.getElementById('rcpt-received').textContent = '2,994.00';
-
-      // Generate Crisp PromptPay QR Code
-      const qrBox = document.getElementById('promptpay-qr-container');
-      qrBox.innerHTML = '';
-      
-      // Standard PromptPay QR target string
-      const promptPayPayload = `https://promptpay.io/0812345678/2994.00`;
-      const qrCanvas = QRCodeLib.createCanvas(promptPayPayload, 170);
-      qrBox.appendChild(qrCanvas);
-
-      document.getElementById('receipt-modal').classList.add('open');
+    // 18.16 CATEGORIES, BUFFET, ZONES
+    function renderCategories() {
+      const chips = document.getElementById('categories-chips');
+      const cats = ['อาหารจานเดียว', 'ของหวาน', 'ยำ/น้ำพริก', 'เครื่องดื่ม', 'ก๋วยเตี๋ยว/เส้น', 'ของทอด', 'หมูกระทะ-ชาบู', 'ผัก/เห็ด'];
+      chips.innerHTML = cats.map(c => `
+        <div style="padding: 10px 16px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 20px; font-weight: 600; font-size: 13.5px;">
+          🏷️ ${c}
+        </div>
+      `).join('');
     }
 
-    function closeReceiptModal() {
-      document.getElementById('receipt-modal').classList.remove('open');
+    function openAddCategoryModal() {
+      const name = prompt('กรอกชื่อหมวดหมู่ใหม่:');
+      if (name) showToast(`เพิ่มหมวดหมู่ ${name} แล้ว`);
     }
 
-    function confirmCheckoutCurrentTable() {
-      const sel = document.getElementById('billing-table-select').value;
-      const method = document.querySelector('input[name="pay-method"]:checked')?.value || 'QR ธนาคาร';
-      document.getElementById('rcpt-pay-method').textContent = method;
-      openReceiptModal(sel);
-      showToast(`💳 เปิดใบเสร็จโต๊ะ ${sel} สำเร็จ`);
+    function renderBuffet() {
+      const grid = document.getElementById('buffet-packages-grid');
+      grid.innerHTML = `
+        <div style="padding: 18px; border: 1px solid var(--border-color); border-radius: 12px; background: #f8fafc;">
+          <h3 style="font-size: 16px; font-weight: 700;">Standard Shabu</h3>
+          <div style="font-size: 22px; font-weight: 800; color: #10b981; margin: 8px 0;">฿299 / ท่าน</div>
+          <p style="font-size: 12px; color: var(--text-muted);">หมูสไลซ์ ไก่ ผักรวม วุ้นเส้น เต้าหู้ไข่ (90 นาที)</p>
+        </div>
+        <div style="padding: 18px; border: 1px solid #c7d2fe; border-radius: 12px; background: #eef2ff;">
+          <h3 style="font-size: 16px; font-weight: 700;">Premium Shabu & Seafood</h3>
+          <div style="font-size: 22px; font-weight: 800; color: #4338ca; margin: 8px 0;">฿499 / ท่าน</div>
+          <p style="font-size: 12px; color: var(--text-muted);">เนื้อสไลซ์ กุ้งสด ปลาหมึก เกี๊ยวกุ้ง ของทอด (120 นาที)</p>
+        </div>
+      `;
     }
 
-    // ── 16. CUSTOMER SIMULATOR MODAL ──
+    function openAddBuffetModal() {
+      const name = prompt('ชื่อแพ็กเกจ:');
+      if (name) showToast(`เพิ่มแพ็กเกจ ${name} แล้ว`);
+    }
+
+    function renderZones() {
+      const container = document.getElementById('zones-list-container');
+      const zones = [
+        { code: 'S', name: 'โซน S (หน้าร้าน)', count: tables.filter(t => t.zone === 'S').length },
+        { code: 'A', name: 'โซน A (ห้องแอร์)', count: tables.filter(t => t.zone === 'A').length },
+        { code: 'B', name: 'โซน B (ระเบียง)', count: tables.filter(t => t.zone === 'B').length },
+        { code: 'VIP', name: 'โซน VIP', count: tables.filter(t => t.zone === 'VIP').length }
+      ];
+      container.innerHTML = zones.map(z => `
+        <div style="padding: 16px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px;">
+          <h4 style="font-size: 15px; font-weight: 800;">${z.name}</h4>
+          <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">มีทั้งหมด ${z.count} โต๊ะ</div>
+        </div>
+      `).join('');
+    }
+
+    function openAddZoneModal() {
+      const name = prompt('ชื่อโซนใหม่:');
+      if (name) showToast(`เพิ่มโซน ${name} แล้ว`);
+    }
+
+    // 18.17 SETTINGS
+    function saveStoreSettings() {
+      storeSettings.name = document.getElementById('setting-store-name').value.trim();
+      storeSettings.addr = document.getElementById('setting-store-addr').value.trim();
+      storeSettings.phone = document.getElementById('setting-store-phone').value.trim();
+      storeSettings.tax = document.getElementById('setting-store-tax').value.trim();
+      storeSettings.promptPay = document.getElementById('setting-store-pp').value.trim();
+
+      document.getElementById('sidebar-brand-text').textContent = storeSettings.name;
+      saveState('SYNC');
+      showToast('💾 บันทึกการตั้งค่าร้านและพร้อมเพย์เรียบร้อยแล้ว');
+    }
+
+    // 18.18 CUSTOMER SIMULATOR (MOBILE VIEW)
     function openCustomerSimulatorModal() {
       const select = document.getElementById('sim-table-select');
-      select.innerHTML = '';
-      tables.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.number;
-        opt.textContent = `${t.number} (โซน ${t.zone})`;
-        select.appendChild(opt);
-      });
+      select.innerHTML = tables.map(t => `<option value="${t.number}">โต๊ะ ${t.number} (โซน ${t.zone})</option>`).join('');
       document.getElementById('customer-sim-modal').classList.add('open');
     }
 
@@ -2838,154 +4223,43 @@
       showToast(`🔔 โต๊ะ ${t.number}: ${note}`);
     }
 
-    // ── 17. OTHER SIDEBAR VIEWS RENDERING ──
-    function renderKds() {
-      const container = document.getElementById('kds-tickets-container');
-      container.innerHTML = `
-        <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
-          <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px;">
-            <span>โต๊ะ S4</span>
-            <span style="color: #ef4444;">⏱️ 8 นาทีที่แล้ว</span>
-          </div>
-          <ul style="font-size: 13px; line-height: 1.8; padding-left: 16px;">
-            <li>ข้าวกะเพราไก่ (ไข่ดาว) x2</li>
-            <li>ผัดไทยกุ้งสด x1</li>
-            <li>ยำวุ้นเส้นทะเล x1</li>
-          </ul>
-          <button class="btn-tbl-action btn-tbl-ack" style="width: 100%; margin-top: 12px;" onclick="showToast('✅ ปรุงเสร็จแล้ว โต๊ะ S4')">
-            🍳 ปรุงเสร็จแล้ว (เสิร์ฟ)
-          </button>
-        </div>
-        <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
-          <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px;">
-            <span>โต๊ะ A1</span>
-            <span style="color: #10b981;">⏱️ 2 นาทีที่แล้ว</span>
-          </div>
-          <ul style="font-size: 13px; line-height: 1.8; padding-left: 16px;">
-            <li>ชุดเนื้อสไลซ์ชาบู x1</li>
-            <li>ผักรวม x1</li>
-            <li>โค้ก x2</li>
-          </ul>
-          <button class="btn-tbl-action btn-tbl-ack" style="width: 100%; margin-top: 12px;" onclick="showToast('✅ ปรุงเสร็จแล้ว โต๊ะ A1')">
-            🍳 ปรุงเสร็จแล้ว (เสิร์ฟ)
-          </button>
-        </div>
-      `;
+    // 18.19 BACKUP JSON IMPORT / EXPORT
+    function exportDataToJson() {
+      const data = { tables, menuItems, orders, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList, storeSettings };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pos_all_in_one_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      showToast('📥 ส่งออกไฟล์สำรอง JSON สำเร็จ');
     }
 
-    function renderMenuItems() {
-      const tbody = document.getElementById('menu-items-tbody');
-      tbody.innerHTML = '';
-      bestSellers.forEach((item, idx) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${idx + 1}</td>
-          <td style="font-weight: 600;">${item.name}</td>
-          <td>${item.category}</td>
-          <td style="font-weight: 700;">${item.avgPrice}</td>
-          <td><span class="status-badge status-available">พร้อมจำหน่าย</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
+    function importDataFromJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const d = JSON.parse(e.target.result);
+          if (d.tables) tables = d.tables;
+          if (d.menuItems) menuItems = d.menuItems;
+          if (d.orders) orders = d.orders;
+          if (d.members) members = d.members;
+          if (d.promotions) promotions = d.promotions;
+          if (d.stockList) stockList = d.stockList;
+          if (d.expensesList) expensesList = d.expensesList;
+          saveState('SYNC');
+          renderAllViews();
+          showToast('📤 นำเข้าข้อมูลเรียบร้อยแล้ว');
+        } catch (err) {
+          alert('ไฟล์สำรองไม่ถูกต้อง');
+        }
+      };
+      reader.readAsText(file);
     }
 
-    function renderManageTables() {
-      const grid = document.getElementById('manage-tables-grid');
-      grid.innerHTML = '';
-      tables.forEach(t => {
-        const card = document.createElement('div');
-        card.className = 'table-card';
-        card.innerHTML = `
-          <div class="table-card-top">
-            <div>
-              <div style="font-size: 24px; font-weight: 800;">${t.number}</div>
-              <div class="table-subinfo">โซน ${t.zone} • ${t.seats} ที่นั่ง</div>
-            </div>
-            <span class="status-badge status-available">เปิดใช้งาน</span>
-          </div>
-          <div style="margin: 12px 0; text-align: center;">
-            <div id="qr-thumb-${t.id}" style="display: flex; justify-content: center;"></div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเรียกพนักงาน</div>
-          </div>
-          <div class="table-actions">
-            <button class="btn-tbl-action" onclick="printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
-          </div>
-        `;
-        grid.appendChild(card);
-
-        setTimeout(() => {
-          const el = document.getElementById(`qr-thumb-${t.id}`);
-          if (el) {
-            const url = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(t.number)}&view=customer`;
-            const c = QRCodeLib.createCanvas(url, 110);
-            el.appendChild(c);
-          }
-        }, 10);
-      });
-    }
-
-    function renderStaff() {
-      const grid = document.getElementById('staff-grid');
-      grid.innerHTML = '';
-      staffList.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'table-card';
-        card.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 32px;">${s.emoji}</div>
-            <div>
-              <h4 style="font-size: 15px; font-weight: 700;">${s.name}</h4>
-              <div style="font-size: 12px; color: var(--text-muted);">${s.role}</div>
-            </div>
-          </div>
-          <div style="font-size: 12px; color: var(--text-muted); margin: 12px 0;">
-            🕒 เข้ากะเมื่อ: <strong>${s.clockIn}</strong>
-          </div>
-          <button class="btn-tbl-action" onclick="toggleStaffShift('${s.id}')">
-            ${s.status === 'active' ? '🚪 ลงเวลาออกงาน' : '⏱️ เริ่มเข้างาน'}
-          </button>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function toggleStaffShift(id) {
-      const s = staffList.find(item => item.id === id);
-      if (!s) return;
-      s.status = s.status === 'active' ? 'off' : 'active';
-      s.clockIn = new Date().toLocaleTimeString('th-TH');
-      saveState();
-      renderStaff();
-      showToast(`บันทึกเวลาของ ${s.name} แล้ว`);
-    }
-
-    function renderStock() {
-      const tbody = document.getElementById('stock-tbody');
-      tbody.innerHTML = '';
-      DEFAULT_STOCK.forEach(stk => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="col-code">${stk.code}</td>
-          <td style="font-weight: 600;">${stk.name}</td>
-          <td style="font-weight: 700;">${stk.qty}</td>
-          <td>${stk.unit}</td>
-          <td>${stk.status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function renderCategories() {
-      const chips = document.getElementById('categories-chips');
-      const cats = ['อาหารจานเดียว', 'ของหวาน', 'ยำ/น้ำพริก', 'เครื่องดื่ม', 'ก๋วยเตี๋ยว/เส้น', 'ของทอด', 'หมูกระทะ-ชาบู', 'ผัก/เห็ด'];
-      chips.innerHTML = cats.map(c => `
-        <div style="padding: 10px 16px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 20px; font-weight: 600; font-size: 13.5px;">
-          🏷️ ${c}
-        </div>
-      `).join('');
-    }
-
-    // ── 18. TOAST NOTIFICATION ──
+    // ── 19. TOAST NOTIFICATION ──
     function showToast(message) {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -3000,42 +4274,32 @@
       }, 4000);
     }
 
-    // ── 19. BACKUP & EXPORT ──
-    function exportDataToJson() {
-      const data = { members, promotions, bestSellers, tables, staffList };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pos_backup_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-    }
-
-    function resetAllDefaults() {
-      if (!confirm('ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าตั้งต้นตามภาพหรือไม่?')) return;
-      localStorage.clear();
-      members = DEFAULT_MEMBERS;
-      promotions = DEFAULT_PROMOTIONS;
-      bestSellers = DEFAULT_BEST_SELLERS;
-      tables = DEFAULT_TABLES;
-      staffList = DEFAULT_STAFF;
-      saveState('SYNC');
-      renderAllViews();
-      showToast('🔄 รีเซ็ตข้อมูลกลับค่าเริ่มต้นเรียบร้อย');
-    }
-
+    // ── 20. MASTER RENDER ALL ──
     function renderAllViews() {
       renderFloorTables();
+      renderDashboard();
       renderMembersTable();
       renderPromotionsGrid();
       renderBestSellersTable();
+      renderOrdersList();
+      renderKds();
     }
 
-    // ── 20. INITIALIZATION ──
+    // ── 21. APP INITIALIZATION ──
     window.addEventListener('DOMContentLoaded', () => {
+      // Check if store settings have custom name
+      if (storeSettings && storeSettings.name) {
+        document.getElementById('sidebar-brand-text').textContent = storeSettings.name;
+        document.getElementById('setting-store-name').value = storeSettings.name;
+        document.getElementById('setting-store-addr').value = storeSettings.addr;
+        document.getElementById('setting-store-phone').value = storeSettings.phone;
+        document.getElementById('setting-store-tax').value = storeSettings.tax;
+        document.getElementById('setting-store-pp').value = storeSettings.promptPay;
+      }
+
       renderAllViews();
 
-      // Check URL parameters for direct table qr scan simulation (e.g. ?table=A1&view=customer)
+      // Check URL parameters for direct table qr scan simulation
       const params = new URLSearchParams(window.location.search);
       const tableParam = params.get('table');
       const viewParam = params.get('view');

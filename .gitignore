@@ -51,3 +51,8 @@ docker-compose.override.yml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Binaries & Archives
+*.exe
+*.zip
+
