@@ -1089,9 +1089,324 @@
         width: 100%;
       }
     }
+
+    /* ── CUSTOMER MOBILE ORDER PAGE ── */
+    #customer-order-page {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+      background: #f4f6fa;
+      flex-direction: column;
+      font-family: 'Sarabun', sans-serif;
+    }
+    #customer-order-page.active {
+      display: flex;
+    }
+    .cust-header {
+      background: linear-gradient(135deg, #1e293b 0%, #312e81 100%);
+      color: #fff;
+      padding: 16px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .cust-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cust-store-name { font-size: 17px; font-weight: 800; }
+    .cust-table-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .cust-cat-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-top: 14px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .cust-cat-scroll::-webkit-scrollbar { display: none; }
+    .cust-cat-pill {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .cust-cat-pill.active {
+      background: #fff;
+      color: #312e81;
+      border-color: #fff;
+    }
+    .cust-body { flex: 1; padding: 16px; padding-bottom: 120px; }
+    .cust-menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .cust-item-card {
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+      display: flex;
+      flex-direction: column;
+    }
+    .cust-item-emoji {
+      font-size: 44px;
+      text-align: center;
+      padding: 18px 8px 8px;
+      background: #f8fafc;
+    }
+    .cust-item-info { padding: 8px 10px 10px; flex: 1; }
+    .cust-item-name { font-size: 13.5px; font-weight: 700; color: #1e293b; line-height: 1.3; }
+    .cust-item-cat { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .cust-item-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .cust-item-price { font-size: 15px; font-weight: 800; color: #4338ca; }
+    .cust-add-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: #4338ca;
+      color: #fff;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .cust-add-btn:active { background: #3730a3; transform: scale(0.93); }
+    /* Floating Cart Bar */
+    .cust-cart-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1e293b;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    }
+    .cust-cart-bar.hidden { display: none; }
+    .cust-cart-info { display: flex; align-items: center; gap: 12px; }
+    .cust-cart-count {
+      background: #4338ca;
+      color: #fff;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .cust-cart-total { font-size: 17px; font-weight: 800; }
+    .cust-order-btn {
+      background: #10b981;
+      border: none;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .cust-order-btn:active { background: #059669; }
+    /* Call staff buttons */
+    .cust-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .cust-action-btn {
+      padding: 14px 10px;
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Sarabun', sans-serif;
+      transition: all 0.15s;
+    }
+    .cust-action-btn:active { transform: scale(0.96); }
+    .cust-action-btn .icon { font-size: 26px; }
+    /* Cart modal overlay */
+    .cust-cart-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .cust-cart-modal.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .cust-cart-sheet {
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px 20px 40px;
+      transform: translateY(30px);
+      transition: transform 0.25s;
+    }
+    .cust-cart-modal.open .cust-cart-sheet { transform: translateY(0); }
+    .cust-cart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .cust-qty-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cust-qty-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .cust-confirm-btn {
+      width: 100%;
+      background: #4338ca;
+      color: #fff;
+      border: none;
+      padding: 15px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 18px;
+      font-family: 'Sarabun', sans-serif;
+    }
+    .cust-confirm-btn:active { background: #3730a3; }
+    .cust-success-box {
+      display: none;
+      background: #d1fae5;
+      border: 1.5px solid #34d399;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      color: #065f46;
+      font-weight: 700;
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
+
+  <!-- ── CUSTOMER MOBILE ORDER PAGE (shown when scanning QR) ── -->
+  <div id="customer-order-page">
+    <!-- Sticky Header -->
+    <div class="cust-header">
+      <div class="cust-header-top">
+        <div>
+          <div class="cust-store-name" id="cust-store-name">🍽️ ร้านอาหาร</div>
+          <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">สแกนสั่งอาหาร / เรียกพนักงาน</div>
+        </div>
+        <div class="cust-table-badge" id="cust-table-badge">โต๊ะ —</div>
+      </div>
+      <!-- Category filter pills -->
+      <div class="cust-cat-scroll" id="cust-cat-scroll"></div>
+    </div>
+
+    <!-- Body -->
+    <div class="cust-body">
+      <!-- Quick action buttons -->
+      <div class="cust-actions">
+        <button class="cust-action-btn" style="background:#fffbeb; border-color:#fde68a; color:#b45309;"
+          onclick="custCallStaff('call_staff','เรียกพนักงาน')">
+          <span class="icon">🔔</span>
+          <span>เรียกพนักงาน</span>
+        </button>
+        <button class="cust-action-btn" style="background:#f0f9ff; border-color:#bae6fd; color:#0369a1;"
+          onclick="custCallStaff('request_bill','ขอเช็คบิล')">
+          <span class="icon">💳</span>
+          <span>ขอเช็คบิล</span>
+        </button>
+        <button class="cust-action-btn" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"
+          onclick="custCallStaff('call_staff','ขอเติมน้ำ 🧊')">
+          <span class="icon">🧊</span>
+          <span>ขอเติมน้ำ</span>
+        </button>
+        <button class="cust-action-btn" style="background:#fdf4ff; border-color:#e9d5ff; color:#7e22ce;"
+          onclick="custCallStaff('call_staff','ขอช้อนส้อม 🥢')">
+          <span class="icon">🥢</span>
+          <span>ขอช้อนส้อม</span>
+        </button>
+      </div>
+
+      <!-- Feedback box for call actions -->
+      <div id="cust-call-feedback" style="display:none; background:#fef9c3; border:1.5px solid #fde047; border-radius:12px; padding:12px 16px; font-size:13px; font-weight:700; color:#713f12; text-align:center; margin-bottom:16px;"></div>
+
+      <!-- Menu section title -->
+      <div style="font-size:15px; font-weight:800; color:#1e293b; margin-bottom:12px;">🍽️ เมนูอาหาร</div>
+      <div class="cust-menu-grid" id="cust-menu-grid"></div>
+    </div>
+
+    <!-- Floating Cart Bar -->
+    <div class="cust-cart-bar hidden" id="cust-cart-bar">
+      <div class="cust-cart-info">
+        <span class="cust-cart-count" id="cust-cart-count">0 รายการ</span>
+        <span class="cust-cart-total" id="cust-cart-total">฿0.00</span>
+      </div>
+      <button class="cust-order-btn" onclick="custOpenCart()">🛒 ดูรายการ / สั่งอาหาร</button>
+    </div>
+
+    <!-- Cart Review Sheet -->
+    <div class="cust-cart-modal" id="cust-cart-modal" onclick="custCloseCartIfOverlay(event)">
+      <div class="cust-cart-sheet">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-size:17px; font-weight:800;">🛒 รายการที่เลือก</div>
+          <button onclick="custCloseCart()" style="border:none; background:#f1f5f9; border-radius:50%; width:30px; height:30px; font-size:16px; cursor:pointer;">✕</button>
+        </div>
+        <div id="cust-cart-items"></div>
+        <div id="cust-cart-summary" style="margin-top:14px; padding-top:14px; border-top:1.5px solid #f1f5f9; font-size:15px; font-weight:800; text-align:right;"></div>
+        <div id="cust-cart-note-area" style="margin-top:12px;">
+          <textarea id="cust-order-note" placeholder="หมายเหตุ เช่น ไม่เผ็ด, แพ้ถั่ว..." rows="2"
+            style="width:100%; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px; font-size:13px; font-family:'Sarabun',sans-serif; resize:none; outline:none;"></textarea>
+        </div>
+        <div id="cust-success-msg" class="cust-success-box">✅ ส่งออเดอร์เรียบร้อยแล้ว! พนักงานจะนำอาหารมาให้ที่โต๊ะ</div>
+        <button class="cust-confirm-btn" id="cust-send-order-btn" onclick="custSendOrder()">📨 ส่งออเดอร์</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── 1. LEFT SIDEBAR (DARK NAVY) ── -->
   <aside id="sidebar">
@@ -4270,19 +4585,212 @@
 
       renderAllViews();
 
-      // Check URL parameters for direct table qr scan simulation
+      // ── Check URL params: if ?table=X&view=customer → launch Customer Order Page ──
       const params = new URLSearchParams(window.location.search);
       const tableParam = params.get('table');
       const viewParam = params.get('view');
 
-      if (tableParam || viewParam === 'customer') {
-        openCustomerSimulatorModal();
-        if (tableParam) {
-          const sel = document.getElementById('sim-table-select');
-          if (sel) sel.value = tableParam;
-        }
+      if (viewParam === 'customer' || tableParam) {
+        launchCustomerOrderPage(tableParam || '');
       }
     });
+
+    // ── CUSTOMER ORDER PAGE FUNCTIONS ──
+    let custCart = [];       // [{id, name, price, qty}]
+    let custTableNumber = '';
+
+    const MENU_EMOJI = {
+      'อาหารจานเดียว': '🍛', 'ก๋วยเตี๋ยว/เส้น': '🍜',
+      'ยำ/น้ำพริก': '🥗', 'ของทอด': '🍗', 'ของหวาน': '🍮',
+      'เครื่องดื่ม': '🧃', 'หมูกระทะ-ชาบู': '🥩', 'ผัก/เห็ด': '🥦'
+    };
+
+    function launchCustomerOrderPage(tableNum) {
+      custTableNumber = tableNum;
+      custCart = [];
+
+      // Hide staff UI, show customer page
+      document.getElementById('sidebar').style.display = 'none';
+      document.getElementById('main-wrapper').style.display = 'none';
+      document.getElementById('customer-order-page').classList.add('active');
+
+      // Set store name & table badge
+      document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
+      document.getElementById('cust-table-badge').textContent = tableNum ? `โต๊ะ ${tableNum}` : 'โต๊ะ —';
+
+      // Build category pills
+      const cats = ['ทั้งหมด', ...new Set(menuItems.map(m => m.category))];
+      const scroll = document.getElementById('cust-cat-scroll');
+      scroll.innerHTML = cats.map((c, i) =>
+        `<button class="cust-cat-pill${i === 0 ? ' active' : ''}" onclick="custFilterCat('${c}', this)">${c}</button>`
+      ).join('');
+
+      // Render menu
+      custRenderMenu('ทั้งหมด');
+      custUpdateCartBar();
+    }
+
+    function custFilterCat(cat, btn) {
+      document.querySelectorAll('.cust-cat-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      custRenderMenu(cat);
+    }
+
+    function custRenderMenu(cat) {
+      const items = cat === 'ทั้งหมด' ? menuItems : menuItems.filter(m => m.category === cat);
+      const grid = document.getElementById('cust-menu-grid');
+      grid.innerHTML = items.map(m => {
+        const emoji = MENU_EMOJI[m.category] || '🍽️';
+        return `
+        <div class="cust-item-card">
+          <div class="cust-item-emoji">${emoji}</div>
+          <div class="cust-item-info">
+            <div class="cust-item-name">${m.name}</div>
+            <div class="cust-item-cat">${m.category}</div>
+            <div class="cust-item-footer">
+              <span class="cust-item-price">฿${m.price}</span>
+              <button class="cust-add-btn" onclick="custAddToCart('${m.id}')">+</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function custAddToCart(menuId) {
+      const item = menuItems.find(m => m.id === menuId);
+      if (!item) return;
+      const existing = custCart.find(c => c.id === menuId);
+      if (existing) {
+        existing.qty++;
+      } else {
+        custCart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
+      }
+      custUpdateCartBar();
+      // Brief visual feedback
+      showToast(`✅ เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
+    }
+
+    function custUpdateCartBar() {
+      const bar = document.getElementById('cust-cart-bar');
+      const total = custCart.reduce((s, c) => s + c.price * c.qty, 0);
+      const totalQty = custCart.reduce((s, c) => s + c.qty, 0);
+      if (custCart.length === 0) {
+        bar.classList.add('hidden');
+      } else {
+        bar.classList.remove('hidden');
+        document.getElementById('cust-cart-count').textContent = `${totalQty} รายการ`;
+        document.getElementById('cust-cart-total').textContent = `฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+      }
+    }
+
+    function custOpenCart() {
+      const itemsEl = document.getElementById('cust-cart-items');
+      const summaryEl = document.getElementById('cust-cart-summary');
+      const successMsg = document.getElementById('cust-success-msg');
+      const sendBtn = document.getElementById('cust-send-order-btn');
+      successMsg.style.display = 'none';
+      sendBtn.style.display = '';
+      document.getElementById('cust-order-note').value = '';
+
+      if (custCart.length === 0) {
+        itemsEl.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">ยังไม่มีรายการในตะกร้า</div>';
+        summaryEl.innerHTML = '';
+      } else {
+        itemsEl.innerHTML = custCart.map(c => `
+          <div class="cust-cart-item">
+            <div>
+              <div style="font-weight:700; font-size:14px;">${c.name}</div>
+              <div style="font-size:12px; color:#64748b;">฿${c.price} / ชิ้น</div>
+            </div>
+            <div class="cust-qty-ctrl">
+              <button class="cust-qty-btn" onclick="custChangeQty('${c.id}', -1)">−</button>
+              <span style="font-weight:800; min-width:20px; text-align:center;">${c.qty}</span>
+              <button class="cust-qty-btn" onclick="custChangeQty('${c.id}', 1)">+</button>
+              <span style="font-weight:700; min-width:56px; text-align:right;">฿${(c.price * c.qty).toLocaleString('th-TH')}</span>
+            </div>
+          </div>
+        `).join('');
+        const total = custCart.reduce((s, c) => s + c.price * c.qty, 0);
+        summaryEl.innerHTML = `รวมทั้งสิ้น: ฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+      }
+
+      document.getElementById('cust-cart-modal').classList.add('open');
+    }
+
+    function custChangeQty(menuId, delta) {
+      const c = custCart.find(i => i.id === menuId);
+      if (!c) return;
+      c.qty += delta;
+      if (c.qty <= 0) custCart = custCart.filter(i => i.id !== menuId);
+      custUpdateCartBar();
+      custOpenCart();   // refresh cart sheet
+    }
+
+    function custCloseCart() {
+      document.getElementById('cust-cart-modal').classList.remove('open');
+    }
+
+    function custCloseCartIfOverlay(e) {
+      if (e.target === document.getElementById('cust-cart-modal')) custCloseCart();
+    }
+
+    function custSendOrder() {
+      if (custCart.length === 0) {
+        showToast('⚠️ กรุณาเลือกเมนูก่อนส่งออเดอร์');
+        return;
+      }
+      const note = document.getElementById('cust-order-note').value.trim();
+      const t = tables.find(tb => tb.number === custTableNumber);
+
+      // Build order object and push to POS orders
+      const orderId = 'ORD-' + Date.now();
+      const newOrder = {
+        id: orderId,
+        tableId: t ? t.id : 'unknown',
+        tableNumber: custTableNumber,
+        items: custCart.map(c => ({ ...c })),
+        note: note,
+        total: custCart.reduce((s, c) => s + c.price * c.qty, 0),
+        status: 'open',
+        createdAt: new Date().toLocaleTimeString('th-TH')
+      };
+      orders.unshift(newOrder);
+
+      // Mark table as calling so staff sees it
+      if (t) {
+        t.status = t.status === 'idle' ? 'calling' : t.status;
+        t.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
+        t.callTime = new Date().toLocaleTimeString('th-TH');
+      }
+
+      saveState('CALL', { table: custTableNumber, type: 'calling', note: 'ลูกค้าส่งออเดอร์จาก QR' });
+      playChimeSound('calling');
+
+      // Show success state
+      document.getElementById('cust-success-msg').style.display = 'block';
+      document.getElementById('cust-send-order-btn').style.display = 'none';
+      custCart = [];
+      custUpdateCartBar();
+    }
+
+    function custCallStaff(type, note) {
+      const t = tables.find(tb => tb.number === custTableNumber);
+      if (t) {
+        t.status = type === 'request_bill' ? 'bill' : 'calling';
+        t.callNote = note;
+        t.callTime = new Date().toLocaleTimeString('th-TH');
+      }
+      playChimeSound(type === 'request_bill' ? 'bill' : 'calling');
+      saveState('CALL', { table: custTableNumber, type: type === 'request_bill' ? 'bill' : 'calling', note });
+
+      const fb = document.getElementById('cust-call-feedback');
+      fb.style.display = 'block';
+      fb.innerHTML = type === 'request_bill'
+        ? '💳 แจ้งขอเช็คบิลแล้ว! พนักงานกำลังมา'
+        : `🔔 ส่งสัญญาณเรียกแล้ว: ${note}`;
+      clearTimeout(fb._timer);
+      fb._timer = setTimeout(() => { fb.style.display = 'none'; }, 5000);
+    }
   </script>
 </body>
 </html>
