@@ -1399,6 +1399,9 @@
         <div id="cust-cart-items"></div>
         <div id="cust-cart-summary" style="margin-top:14px; padding-top:14px; border-top:1.5px solid #f1f5f9; font-size:15px; font-weight:800; text-align:right;"></div>
         <div id="cust-cart-note-area" style="margin-top:12px;">
+          <label for="cust-guest-count" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px;">จำนวนลูกค้าที่โต๊ะ</label>
+          <input id="cust-guest-count" type="number" min="1" max="50" value="1" inputmode="numeric"
+            style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;font-size:14px;margin-bottom:10px;">
           <textarea id="cust-order-note" placeholder="หมายเหตุ เช่น ไม่เผ็ด, แพ้ถั่ว..." rows="2"
             style="width:100%; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px; font-size:13px; font-family:'Sarabun',sans-serif; resize:none; outline:none;"></textarea>
         </div>
@@ -1718,6 +1721,27 @@
             <div class="stat-info">
               <h3 id="dash-stat-members">0 สมาชิก</h3>
               <p>สมาชิกร้านทั้งหมด</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">🔗</div>
+            <div class="stat-info">
+              <h3 id="dash-stat-link-orders">0</h3>
+              <p>ออเดอร์จากลิงก์/QR วันนี้</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f0fdfa; color: #0f766e;">🧑‍🤝‍🧑</div>
+            <div class="stat-info">
+              <h3 id="dash-stat-link-guests">0 คน</h3>
+              <p>ลูกค้าที่แจ้งผ่านลิงก์วันนี้</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fff7ed; color: #c2410c;">🍽️</div>
+            <div class="stat-info">
+              <h3 id="dash-stat-link-items">0 รายการ</h3>
+              <p>อาหารที่สั่งผ่านลิงก์วันนี้</p>
             </div>
           </div>
         </div>
@@ -2983,6 +3007,12 @@
       }, 700);
     }
 
+    function syncPOSOrderRecord(order, paymentMethod = '') {
+      if (!order || !order.id || !remotePOSAvailable) return;
+      tableCallGas('updatePOSOrder', { id: order.id, status: order.status, paymentMethod }, true)
+        .catch(err => showToast(`⚠️ บันทึกสถานะออเดอร์ลง Google Sheets ไม่สำเร็จ: ${err.message}`));
+    }
+
     // ── 14. LOCAL STORAGE STATE ENGINE ──
     let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
     let menuItems = JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG;
@@ -3239,20 +3269,48 @@
 
     // 18.1 DASHBOARD
     function renderDashboard() {
-      const paidOrders = orders.filter(o => o.status === 'paid');
-      const totalSales = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const todayKey = new Date().toLocaleDateString('en-CA');
+      const isToday = order => {
+        const raw = order.created_at || order.createdAt || order.paidAt;
+        if (!raw) return false;
+        const date = new Date(raw);
+        return Number.isNaN(date.getTime()) ? /^\d{1,2}:\d{2}/.test(String(raw)) : date.toLocaleDateString('en-CA') === todayKey;
+      };
+      const todayOrders = orders.filter(order => isToday(order) && order.status !== 'cancelled');
+      const isPaidToday = order => {
+        const raw = order.paid_at || order.paidAt || order.created_at || order.createdAt;
+        if (!raw) return false;
+        const date = new Date(raw);
+        return Number.isNaN(date.getTime()) ? /^\d{1,2}:\d{2}/.test(String(raw)) : date.toLocaleDateString('en-CA') === todayKey;
+      };
+      const paidOrders = orders.filter(o => o.status === 'paid' && isPaidToday(o));
+      const totalSales = paidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const linkOrders = todayOrders.filter(o => o.source === 'customer_link' || o.source === 'qr');
+      const linkGuests = linkOrders.reduce((sum, o) => sum + (Number(o.guest_count || o.guestCount) || 1), 0);
+      const linkItems = linkOrders.reduce((sum, order) => sum + (order.items || []).reduce((count, item) => count + (Number(item.qty) || 0), 0), 0);
       const occupiedTables = tables.filter(t => t.status !== 'idle').length;
 
       document.getElementById('dash-stat-sales').textContent = `฿${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-      document.getElementById('dash-stat-orders').textContent = paidOrders.length;
+      document.getElementById('dash-stat-orders').textContent = todayOrders.length;
       document.getElementById('dash-stat-tables').textContent = `${occupiedTables} / ${tables.length}`;
       document.getElementById('dash-stat-members').textContent = `${members.length} สมาชิก`;
+      document.getElementById('dash-stat-link-orders').textContent = linkOrders.length;
+      document.getElementById('dash-stat-link-guests').textContent = `${linkGuests} คน`;
+      document.getElementById('dash-stat-link-items').textContent = `${linkItems} รายการ`;
 
       // Render hourly sales chart
       const chart = document.getElementById('dash-hourly-chart');
       const hours = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+      const hourlyTotals = hours.map(h => {
+        const hour = Number(h.slice(0, 2));
+        return paidOrders.filter(order => {
+          const date = new Date(order.paid_at || order.created_at || order.createdAt || order.paidAt);
+          return !Number.isNaN(date.getTime()) && date.getHours() === hour;
+        }).reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      });
+      const maxHourly = Math.max(...hourlyTotals, 0);
       chart.innerHTML = hours.map((h, i) => {
-        const height = totalSales === 0 ? 10 : Math.min(180, 20 + (i * 20 % 160));
+        const height = maxHourly === 0 ? 10 : Math.max(10, Math.round(hourlyTotals[i] / maxHourly * 180));
         return `
           <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
             <div style="width: 100%; background: ${totalSales === 0 ? '#e2e8f0' : '#4f46e5'}; height: ${height}px; border-radius: 4px; transition: height 0.3s;"></div>
@@ -3522,6 +3580,8 @@
         total: total,
         note: note,
         status: 'pending',
+        source: 'staff',
+        guestCount: Number(tables.find(item => item.number === tableNum)?.seats) || 1,
         time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
         paidAt: null
       };
@@ -3590,6 +3650,7 @@
       else if (o.status === 'cooking') o.status = 'served';
       else if (o.status === 'served') o.status = 'paid';
       else o.status = 'pending';
+      syncPOSOrderRecord(o);
       saveState('SYNC');
       renderOrdersList();
       renderKds();
@@ -3656,6 +3717,7 @@
       const o = orders.find(item => item.id === orderId);
       if (!o) return;
       o.status = 'cooking';
+      syncPOSOrderRecord(o);
       saveState('SYNC');
       renderKds();
       renderOrdersList();
@@ -3666,6 +3728,7 @@
       const o = orders.find(item => item.id === orderId);
       if (!o) return;
       o.status = 'served';
+      syncPOSOrderRecord(o);
       saveState('SYNC');
       renderKds();
       renderOrdersList();
@@ -3740,6 +3803,7 @@
         o.status = 'paid';
         o.paidAt = new Date().toLocaleTimeString('th-TH');
         o.payMethod = payMethod;
+        syncPOSOrderRecord(o, payMethod);
       });
 
       // Clear table status
@@ -4427,8 +4491,11 @@
 
     // 18.15 MANAGE TABLES & QR CODES
     function tableOrderUrl(tableNumber) {
-      const url = new URL(TABLECALL_APPS_SCRIPT_URL);
-      url.searchParams.set('page', 'order');
+      // Use the public POS page for QR ordering. Apps Script remains the data API,
+      // avoiding the Google Drive interstitial some deployments show for HTML routes.
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
       url.searchParams.set('table', tableNumber);
       return url.toString();
     }
@@ -4680,30 +4747,36 @@
       if (TABLECALL_IS_CUSTOMER || !remotePOSAvailable) return;
       try {
         const remoteOrders = await tableCallGas('listPOSOrders');
-        const newOrders = (remoteOrders || []).filter(order => !orders.some(existing => String(existing.id) === String(order.id)));
-        if (!newOrders.length) return;
-        for (const order of newOrders.reverse()) {
-          const table = tables.find(item => String(item.number) === String(order.table_number));
-          orders.unshift({
-            id: order.id,
-            tableId: table ? table.id : 'unknown',
-            tableNumber: order.table_number,
-            items: order.items || [],
-            note: order.note || '',
-            total: Number(order.total) || 0,
-            status: order.status || 'open',
-            createdAt: new Date(order.created_at).toLocaleTimeString('th-TH'),
-          });
-          if (table) {
+        const rows = remoteOrders || [];
+        const knownIds = new Set(orders.map(order => String(order.id)));
+        const newOrders = rows.filter(order => !knownIds.has(String(order.id)));
+        rows.forEach(remote => {
+          const index = orders.findIndex(existing => String(existing.id) === String(remote.id));
+          const table = tables.find(item => String(item.number) === String(remote.table_number));
+          const normalized = {
+            ...(index >= 0 ? orders[index] : {}), id: remote.id,
+            tableId: table ? table.id : 'unknown', tableNumber: remote.table_number,
+            items: remote.items || [], note: remote.note || '', total: Number(remote.total) || 0,
+            status: remote.status || 'open', source: remote.source || 'staff',
+            guestCount: Number(remote.guest_count) || 1, created_at: remote.created_at,
+            paid_at: remote.paid_at || '', payMethod: remote.payment_method || '',
+            createdAt: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH') : '',
+          };
+          if (index >= 0) orders[index] = normalized;
+          else orders.unshift(normalized);
+          if (table && normalized.status !== 'paid' && normalized.status !== 'cancelled') {
             table.status = 'occupied';
-            table.callNote = 'มีออเดอร์ใหม่จากพนักงาน';
-            table.callTime = new Date(order.created_at).toLocaleTimeString('th-TH');
+            table.callNote = 'มีออเดอร์จาก Google Sheets';
+            table.callTime = normalized.createdAt;
           }
-        }
+        });
+        if (!rows.length && !newOrders.length) return;
         saveState(null, null, true);
         renderAllViews();
-        playChimeSound('calling');
-        showToast(`🔔 ซิงก์ออเดอร์ใหม่ ${newOrders.length} รายการ`);
+        if (newOrders.length) {
+          playChimeSound('calling');
+          showToast(`🔔 ซิงก์ออเดอร์ใหม่ ${newOrders.length} รายการ`);
+        }
       } catch (err) { console.error('Apps Script order poll failed', err); }
     }
 
@@ -4774,17 +4847,12 @@
       // Set store name & table badge
       document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
       document.getElementById('cust-table-badge').textContent = tableNum ? `โต๊ะ ${tableNum}` : 'โต๊ะ —';
-      document.querySelector('.cust-header-top > div:first-child > div:nth-child(2)').textContent = 'สแกนเพื่อเรียกพนักงาน';
-      document.getElementById('cust-cat-scroll').style.display = 'none';
-      document.getElementById('cust-menu-grid').style.display = 'none';
-      document.getElementById('cust-cart-bar').style.display = 'none';
+      document.querySelector('.cust-header-top > div:first-child > div:nth-child(2)').textContent = 'เลือกเมนูและสั่งอาหารจากโต๊ะ';
+      document.getElementById('cust-cat-scroll').style.display = '';
+      document.getElementById('cust-menu-grid').style.display = 'grid';
+      document.getElementById('cust-cart-bar').style.display = '';
       const menuTitle = document.getElementById('cust-menu-grid').previousElementSibling;
-      if (menuTitle) menuTitle.style.display = 'none';
-      const staffOrderNotice = document.createElement('div');
-      staffOrderNotice.id = 'cust-staff-order-notice';
-      staffOrderNotice.style.cssText = 'margin-top:16px;padding:16px;border:1px solid #c7d2fe;border-radius:12px;background:#eef2ff;color:#3730a3;text-align:center;font-weight:700;';
-      staffOrderNotice.textContent = 'กรุณาแจ้งรายการอาหารกับพนักงาน พนักงานจะเป็นผู้บันทึกออเดอร์ให้';
-      document.getElementById('cust-menu-grid').parentElement.appendChild(staffOrderNotice);
+      if (menuTitle) menuTitle.style.display = '';
 
       // Build category pills
       const cats = ['ทั้งหมด', ...new Set(menuItems.map(m => m.category))];
@@ -4792,8 +4860,7 @@
       scroll.innerHTML = cats.map((c, i) =>
         `<button class="cust-cat-pill${i === 0 ? ' active' : ''}" onclick="custFilterCat('${c}', this)">${c}</button>`
       ).join('');
-
-      // QR is retained for calling staff and requesting the bill; staff enter food orders.
+      custRenderMenu('ทั้งหมด');
     }
 
     function custFilterCat(cat, btn) {
@@ -4907,6 +4974,7 @@
         return;
       }
       const note = document.getElementById('cust-order-note').value.trim();
+      const guestCount = Math.max(1, Math.min(50, Number(document.getElementById('cust-guest-count').value) || 1));
       const t = tables.find(tb => tb.number === custTableNumber);
 
       // Build order object and push to POS orders
@@ -4917,6 +4985,8 @@
         tableNumber: custTableNumber,
         items: custCart.map(c => ({ ...c })),
         note: note,
+        source: 'customer_link',
+        guestCount,
         total: custCart.reduce((s, c) => s + c.price * c.qty, 0),
         status: 'open',
         createdAt: new Date().toLocaleTimeString('th-TH')
@@ -4939,7 +5009,7 @@
       const submitButton = document.getElementById('cust-send-order-btn');
       submitButton.disabled = true;
       submitButton.textContent = 'กำลังส่งออเดอร์...';
-      tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: newOrder.items, note, total: newOrder.total } })
+      tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: newOrder.items, note, total: newOrder.total, source: 'customer_link', guestCount } })
         .then(saved => { newOrder.id = saved.id; finishOrder(); })
         .catch(err => {
           const feedback = document.getElementById('cust-call-feedback');
