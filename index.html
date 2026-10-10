@@ -2923,7 +2923,7 @@
     ];
 
     // ── Apps Script bridge (shared menu, customer orders and calls) ──
-    const TABLECALL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyer9oSzQqEQCql0oUK5Ew6qLbKEoVlq_hvNiLVav-hwdsuYRjASvgPM9kh01TOd0KX/exec';
+    const TABLECALL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyQFnu4Ga154hl4EEVHwNnCuNDPQGkG9ofiKK09Uv_o_3X4lnTjmj_-UZGXdm8wnst/exec';
     const TABLECALL_IS_CUSTOMER = new URLSearchParams(window.location.search).get('view') === 'customer' || new URLSearchParams(window.location.search).has('table');
     let remotePOSAvailable = false;
     let posStateSaveTimer = null;
@@ -2963,12 +2963,23 @@
       });
     }
 
+    function explainAppsScriptError(error) {
+      const message = String(error && error.message || error || 'เชื่อมต่อไม่สำเร็จ');
+      if (/Unexpected token.*eyJ|not valid JSON/i.test(message)) {
+        return 'Apps Script ที่ Deploy ยังเป็นเวอร์ชันเก่า: ให้วาง Code.gs ล่าสุด แล้ว Deploy > Manage deployments > Edit > New version';
+      }
+      if (/CustomerOrder|File not found/i.test(message)) {
+        return 'Apps Script ยังไม่มีหน้า CustomerOrder: เพิ่มไฟล์ HTML ชื่อ CustomerOrder แล้ว Deploy เป็น New version';
+      }
+      return message;
+    }
+
     function schedulePOSStateSave() {
       if (TABLECALL_IS_CUSTOMER || !TABLECALL_APPS_SCRIPT_URL) return;
       clearTimeout(posStateSaveTimer);
       posStateSaveTimer = setTimeout(() => {
         tableCallGas('savePOSState', { state: { tables, menuItems, settings: storeSettings } }, true)
-          .catch(err => showToast(`⚠️ ซิงก์เมนูไม่สำเร็จ: ${err.message}`));
+          .catch(err => showToast(`⚠️ ซิงก์เมนูไม่สำเร็จ: ${explainAppsScriptError(err)}`));
       }, 700);
     }
 
