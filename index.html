@@ -1688,9 +1688,22 @@
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
           <div class="content-card">
-            <div class="card-title" style="margin-bottom: 16px;">📈 ยอดขายรายชั่วโมง (วันนี้)</div>
-            <div id="dash-hourly-chart" style="height: 220px; display: flex; align-items: flex-end; gap: 14px; padding-top: 20px; border-bottom: 1px solid var(--border-color);">
-              <!-- Rendered dynamically based on live sales -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+              <div class="card-title" id="dash-hourly-title">📈 ยอดขายรายชั่วโมง</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <label for="dash-sales-period" style="font-size:13px;color:var(--text-muted);">ดูข้อมูล</label>
+                <select class="form-input" id="dash-sales-period" onchange="updateDashboardSalesPeriod()" style="width:auto;min-width:130px;padding:8px 10px;">
+                  <option value="day">เลือกวันที่</option>
+                  <option value="month">ทั้งเดือน</option>
+                </select>
+                <input class="form-input" id="dash-sales-date" type="date" onchange="renderDashboardSalesPeriod()" style="width:auto;padding:8px 10px;">
+                <input class="form-input" id="dash-sales-month" type="month" onchange="renderDashboardSalesPeriod()" style="width:auto;padding:8px 10px;display:none;">
+                <button class="btn-tbl-action" onclick="exportDashboardSalesPdf()" style="padding:8px 12px;white-space:nowrap;">📄 พิมพ์ / บันทึก PDF</button>
+              </div>
+            </div>
+            <div id="dash-sales-period-summary" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;"></div>
+            <div id="dash-hourly-chart" style="display:grid;grid-template-columns:repeat(12,minmax(38px,1fr));gap:12px 8px;padding:12px 2px 8px;border-bottom:1px solid var(--border-color);overflow-x:auto;">
+              <!-- Rendered dynamically based on paid sales in the selected period -->
             </div>
           </div>
 
@@ -2222,9 +2235,8 @@
 
     </main>
 
-    <!-- Footer matching screenshot: © 2026 POS All-in-One v1.0.0 · พัฒนาด้วย PHP 8.2.12 -->
     <footer id="page-footer">
-      © 2026 POS All-in-One v1.0.0 · พัฒนาด้วย PHP 8.2.12
+      © <span id="footer-current-year">2026</span> POS All-in-One v1.0.0 · พัฒนาด้วย HTML, CSS และ JavaScript · เชื่อมต่อ Google Apps Script และ Google Sheets
     </footer>
   </div>
 
@@ -3416,6 +3428,7 @@
     // 18.1 DASHBOARD
     function renderDashboard() {
       if (!isStoreOwner()) return;
+      initializeDashboardSalesControls();
       const todayKey = new Date().toLocaleDateString('en-CA');
       const isToday = order => {
         const raw = order.created_at || order.createdAt || order.paidAt;
@@ -3445,26 +3458,126 @@
       document.getElementById('dash-stat-link-guests').textContent = `${linkGuests} คน`;
       document.getElementById('dash-stat-link-items').textContent = `${linkItems} รายการ`;
 
-      // Render hourly sales chart
+      renderDashboardSalesPeriod();
+    }
+
+    function initializeDashboardSalesControls() {
+      const dateInput = document.getElementById('dash-sales-date');
+      const monthInput = document.getElementById('dash-sales-month');
+      if (!dateInput || dateInput.dataset.initialized) return;
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      dateInput.value = today;
+      monthInput.value = today.slice(0, 7);
+      dateInput.dataset.initialized = 'true';
+    }
+
+    function updateDashboardSalesPeriod() {
+      const isMonth = document.getElementById('dash-sales-period').value === 'month';
+      document.getElementById('dash-sales-date').style.display = isMonth ? 'none' : '';
+      document.getElementById('dash-sales-month').style.display = isMonth ? '' : 'none';
+      renderDashboardSalesPeriod();
+    }
+
+    function dashboardOrderDate(order) {
+      const raw = order.paid_at || order.paidAt || order.created_at || order.createdAt;
+      if (!raw) return null;
+      const value = String(raw).trim();
+      // Older locally-created paid orders may only have a time. Keep those visible for today.
+      if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(value)) {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...value.split(':').map(Number));
+      }
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function dashboardDateKey(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function renderDashboardSalesPeriod() {
       const chart = document.getElementById('dash-hourly-chart');
-      const hours = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
-      const hourlyTotals = hours.map(h => {
-        const hour = Number(h.slice(0, 2));
-        return paidOrders.filter(order => {
-          const date = new Date(order.paid_at || order.created_at || order.createdAt || order.paidAt);
-          return !Number.isNaN(date.getTime()) && date.getHours() === hour;
-        }).reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      const periodSelect = document.getElementById('dash-sales-period');
+      if (!chart || !periodSelect) return;
+      const isMonth = periodSelect.value === 'month';
+      const selectedDay = document.getElementById('dash-sales-date').value;
+      const selectedMonth = document.getElementById('dash-sales-month').value;
+      const selectedPeriod = isMonth ? selectedMonth : selectedDay;
+      const monthLabel = selectedMonth ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) : '';
+      const dayLabel = selectedDay ? new Date(`${selectedDay}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const label = isMonth ? monthLabel : dayLabel;
+      document.getElementById('dash-hourly-title').textContent = `📈 ยอดขายรายชั่วโมง · ${isMonth ? 'ทั้งเดือน' : 'รายวัน'}`;
+
+      if (!selectedPeriod) {
+        document.getElementById('dash-sales-period-summary').textContent = 'กรุณาเลือกวันที่หรือเดือน';
+        chart.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);padding:18px 0;">ยังไม่มีข้อมูล</div>';
+        return;
+      }
+
+      const periodOrders = orders.filter(order => {
+        if (order.status !== 'paid') return false;
+        const date = dashboardOrderDate(order);
+        if (!date) return false;
+        return isMonth ? dashboardDateKey(date).startsWith(selectedMonth) : dashboardDateKey(date) === selectedDay;
       });
+      const total = periodOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      const hourlyTotals = Array.from({ length: 24 }, (_, hour) => periodOrders
+        .filter(order => dashboardOrderDate(order).getHours() === hour)
+        .reduce((sum, order) => sum + (Number(order.total) || 0), 0));
       const maxHourly = Math.max(...hourlyTotals, 0);
-      chart.innerHTML = hours.map((h, i) => {
-        const height = maxHourly === 0 ? 10 : Math.max(10, Math.round(hourlyTotals[i] / maxHourly * 180));
-        return `
-          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-            <div style="width: 100%; background: ${totalSales === 0 ? '#e2e8f0' : '#4f46e5'}; height: ${height}px; border-radius: 4px; transition: height 0.3s;"></div>
-            <span style="font-size: 11px; color: var(--text-muted);">${h}</span>
-          </div>
-        `;
+      const maxBarHeight = 104;
+      document.getElementById('dash-sales-period-summary').textContent = `${label} · ${periodOrders.length.toLocaleString('th-TH')} บิล · ยอดขาย ฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isMonth ? ' · แท่งแสดงยอดสะสมของแต่ละชั่วโมงตลอดเดือน' : ''}`;
+      chart.innerHTML = hourlyTotals.map((amount, hour) => {
+        const height = maxHourly ? Math.max(3, Math.round(amount / maxHourly * maxBarHeight)) : 3;
+        const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+        return `<div title="${hourLabel} · ฿${amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}" style="min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:140px;">
+          <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${amount ? `฿${amount.toLocaleString('th-TH')}` : ''}</span>
+          <div style="width:70%;max-width:28px;min-height:3px;height:${height}px;background:${amount ? '#4f46e5' : '#e2e8f0'};border-radius:4px 4px 0 0;transition:height .2s;"></div>
+          <span style="font-size:10px;color:var(--text-muted);">${hourLabel}</span>
+        </div>`;
       }).join('');
+    }
+
+    function exportDashboardSalesPdf() {
+      const isMonth = document.getElementById('dash-sales-period').value === 'month';
+      const selectedDay = document.getElementById('dash-sales-date').value;
+      const selectedMonth = document.getElementById('dash-sales-month').value;
+      const selectedPeriod = isMonth ? selectedMonth : selectedDay;
+      if (!selectedPeriod) { alert('กรุณาเลือกวันที่หรือเดือนก่อน'); return; }
+
+      const periodOrders = orders.filter(order => {
+        if (order.status !== 'paid') return false;
+        const date = dashboardOrderDate(order);
+        if (!date) return false;
+        return isMonth ? dashboardDateKey(date).startsWith(selectedMonth) : dashboardDateKey(date) === selectedDay;
+      }).sort((a, b) => dashboardOrderDate(a) - dashboardOrderDate(b));
+      const total = periodOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, orders: periodOrders.filter(order => dashboardOrderDate(order).getHours() === hour) }));
+      const daily = isMonth ? Array.from({ length: new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)), 0).getDate() }, (_, index) => {
+        const day = `${selectedMonth}-${String(index + 1).padStart(2, '0')}`;
+        const dayOrders = periodOrders.filter(order => dashboardDateKey(dashboardOrderDate(order)) === day);
+        return { day, count: dayOrders.length, total: dayOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0) };
+      }) : [];
+      const safe = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+      const money = value => `฿${Number(value || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const periodLabel = isMonth
+        ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
+        : new Date(`${selectedDay}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+      const win = window.open('', '_blank');
+      if (!win) { alert('เบราว์เซอร์บล็อกหน้ารายงาน กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
+      const dailyTable = isMonth ? `<h2>สรุปยอดขายรายวัน</h2><table><thead><tr><th>วันที่</th><th>จำนวนบิล</th><th>ยอดขาย</th></tr></thead><tbody>${daily.map(row => `<tr><td>${new Date(`${row.day}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</td><td>${row.count.toLocaleString('th-TH')}</td><td>${money(row.total)}</td></tr>`).join('')}</tbody></table>` : '';
+      const createdAt = new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+      win.document.open();
+      win.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>รายงานยอดขาย ${safe(periodLabel)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"><style>
+        *{box-sizing:border-box}body{font-family:'Sarabun',sans-serif;color:#172033;margin:0;padding:28px;font-size:13px}.head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #4f46e5;padding-bottom:14px;margin-bottom:18px}.head h1{font-size:22px;margin:0 0 4px}.muted{color:#64748b}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 24px}.tile{border:1px solid #dbe3f0;border-radius:8px;padding:12px}.tile b{display:block;font-size:18px;margin-top:4px}h2{font-size:16px;margin:22px 0 8px}table{width:100%;border-collapse:collapse;margin-bottom:16px}th,td{border:1px solid #dbe3f0;padding:6px 8px;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#f1f5f9}.foot{margin-top:20px;border-top:1px solid #dbe3f0;padding-top:8px;font-size:11px;color:#64748b}@media print{body{padding:10mm}.summary{break-inside:avoid}h2{break-after:avoid}table{break-inside:auto}tr{break-inside:avoid}button{display:none}}
+      </style></head><body><div class="head"><div><h1>${safe(storeSettings.name || 'รายงานยอดขาย')}</h1><div>รายงานยอดขาย${isMonth ? 'ประจำเดือน' : 'ประจำวันที่'} ${safe(periodLabel)}</div></div><div class="muted">สร้างรายงาน<br>${safe(createdAt)}</div></div>
+        <div class="summary"><div class="tile">ยอดขายรวม<b>${money(total)}</b></div><div class="tile">จำนวนบิล<b>${periodOrders.length.toLocaleString('th-TH')} บิล</b></div><div class="tile">ยอดเฉลี่ยต่อบิล<b>${money(periodOrders.length ? total / periodOrders.length : 0)}</b></div></div>
+        <h2>ยอดขายแยกตามชั่วโมง</h2><table><thead><tr><th>ช่วงเวลา</th><th>จำนวนบิล</th><th>ยอดขาย</th></tr></thead><tbody>${hourly.map(row => `<tr><td>${String(row.hour).padStart(2, '0')}:00–${String((row.hour + 1) % 24).padStart(2, '0')}:00</td><td>${row.orders.length.toLocaleString('th-TH')}</td><td>${money(row.orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0))}</td></tr>`).join('')}</tbody></table>
+        ${dailyTable}<div class="foot">รายงานนี้รวมเฉพาะออเดอร์สถานะชำระเงินแล้ว · POS All-in-One · Google Apps Script / Google Sheets</div></body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 500);
     }
 
     // 18.2 FLOOR PLAN & TABLES (TABLECALL)
