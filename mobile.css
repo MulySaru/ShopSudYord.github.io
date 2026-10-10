@@ -35,6 +35,12 @@
   body:not(.customer-order-mode) #manage-table-results { margin-top: 6px; color: var(--text-muted); font-size: 12px; }
   body:not(.customer-order-mode) .receipt-buttons { display: grid; grid-template-columns: 1fr; gap: 8px; }
   body:not(.customer-order-mode) .receipt-buttons button { width: 100%; min-height: 46px; justify-content: center; }
+  body:not(.customer-order-mode) .sales-history-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; padding: 10px; }
+  body:not(.customer-order-mode) .sales-history-search { grid-column: 1 / -1; }
+  body:not(.customer-order-mode) .sales-history-all-dates { grid-column: 1 / 2; }
+  body:not(.customer-order-mode) .sales-history-summary { grid-column: 2 / 3; justify-self: end; font-size: 12px; }
+  body:not(.customer-order-mode) #view-sales-report .card-header-flex { align-items: stretch; flex-direction: column; }
+  body:not(.customer-order-mode) #view-sales-report .card-header-flex > .btn-primary { width: 100%; min-height: 46px; justify-content: center; }
   body:not(.customer-order-mode) .manage-table-card {
     display: grid; grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "top qr" "actions actions";
     align-items: center; gap: 10px; min-height: 0; cursor: default !important;
@@ -93,6 +99,12 @@
   body:not(.customer-order-mode) .zone-pill { flex: 0 0 auto; min-height: 38px; }
   body:not(.customer-order-mode) .table-grid { grid-template-columns: 1fr; gap: 10px; }
   body:not(.customer-order-mode) .table-card { min-height: 160px; padding: 14px; }
+  body:not(.customer-order-mode) .sales-history-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; padding: 10px; }
+  body:not(.customer-order-mode) .sales-history-search { grid-column: 1 / -1; }
+  body:not(.customer-order-mode) .sales-history-all-dates { grid-column: 1 / 2; }
+  body:not(.customer-order-mode) .sales-history-summary { grid-column: 2 / 3; justify-self: end; font-size: 12px; }
+  body:not(.customer-order-mode) #view-sales-report .card-header-flex { align-items: stretch; flex-direction: column; }
+  body:not(.customer-order-mode) #view-sales-report .card-header-flex > .btn-primary { width: 100%; min-height: 46px; justify-content: center; }
   body:not(.customer-order-mode) #view-table-settings .card-header-flex { display: grid; grid-template-columns: 1fr; gap: 10px; }
   body:not(.customer-order-mode) #view-table-settings .card-header-flex > .btn-primary { width: 100%; min-height: 46px; }
   body:not(.customer-order-mode) #manage-table-mobile-tools { display: block !important; margin: 0 0 14px; }

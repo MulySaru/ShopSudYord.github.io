@@ -447,6 +447,23 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
+    .sales-history-filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(170px, 220px) auto minmax(140px, auto);
+      align-items: end;
+      gap: 12px;
+      padding: 14px;
+      margin: 0 0 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .sales-history-search, .sales-history-date { display: grid; gap: 6px; color: #334155; font-size: 12px; font-weight: 700; }
+    .sales-history-filters .form-input { min-height: 42px; }
+    .sales-history-all-dates { display: flex; align-items: center; gap: 7px; min-height: 42px; white-space: nowrap; color: #334155; font-size: 13px; font-weight: 600; }
+    .sales-history-all-dates input { width: 18px; height: 18px; accent-color: #4338ca; }
+    .sales-history-summary { justify-self: end; min-height: 42px; display: flex; align-items: center; color: #334155; font-size: 13px; font-weight: 800; white-space: nowrap; }
+
     /* Badges */
     .badge-tier {
       display: inline-block;
@@ -2122,6 +2139,17 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">📈 ประวัติการขายและบิลใบเสร็จ</div>
+            <button class="btn-primary" onclick="printSalesHistory()">🖨️ พิมพ์รายการที่แสดง</button>
+          </div>
+          <div class="sales-history-filters">
+            <label class="sales-history-search">ค้นหาเลขบิล / โต๊ะ
+              <input id="sales-history-search" class="form-input" type="search" placeholder="เช่น ORD-261010-001 หรือ S1" oninput="renderSalesReport()">
+            </label>
+            <label class="sales-history-date">เลือกวันที่
+              <input id="sales-history-date" class="form-input" type="date" onchange="renderSalesReport()">
+            </label>
+            <label class="sales-history-all-dates"><input id="sales-history-all-dates" type="checkbox" onchange="renderSalesReport()"> ทุกวัน</label>
+            <div id="sales-history-summary" class="sales-history-summary" role="status" aria-live="polite"></div>
           </div>
           <div class="data-table-container">
             <table class="data-table">
@@ -2132,7 +2160,7 @@
                   <th>ยอดสุทธิ</th>
                   <th>วิธีชำระ</th>
                   <th>วันที่ / เวลา</th>
-                  <th style="text-align: center;">ดูใบเสร็จ</th>
+                  <th style="text-align: center;">ใบเสร็จ</th>
                 </tr>
               </thead>
               <tbody id="sales-history-tbody"></tbody>
@@ -3877,7 +3905,7 @@
       }
 
       const newOrder = {
-        id: 'ORD-' + Math.floor(100 + Math.random() * 900),
+        id: `ORD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-TMP${Math.floor(1000 + Math.random() * 9000)}`,
         tableNumber: tableNum,
         items: selectedItems,
         total: total,
@@ -3930,7 +3958,7 @@
         else if (o.status === 'paid') statusBadge = '<span class="status-badge status-available">✅ ชำระแล้ว</span>';
 
         tr.innerHTML = `
-          <td class="col-code">${o.id}</td>
+          <td class="col-code" title="${custEscape(o.id)}">${shortOrderCode(o.id)}</td>
           <td style="font-weight: 700;">โต๊ะ ${o.tableNumber}</td>
           <td style="max-width: 250px;">${itemsText}</td>
           <td style="font-weight: 700;">${totalQty}</td>
@@ -3953,11 +3981,15 @@
       else if (o.status === 'cooking') o.status = 'served';
       else if (o.status === 'served') o.status = 'paid';
       else o.status = 'pending';
+      if (o.status === 'paid') {
+        o.paidAt = new Date().toISOString();
+        o.paid_at = o.paidAt;
+      }
       syncPOSOrderRecord(o);
       saveState('SYNC');
       renderOrdersList();
       renderKds();
-      showToast(`เปลี่ยนสถานะออเดอร์ ${o.id} เป็น ${o.status}`);
+      showToast(`เปลี่ยนสถานะ ${shortOrderCode(o.id)} เป็น ${o.status}`);
     }
 
     function cancelOrder(orderId) {
@@ -3990,7 +4022,7 @@
         const isCooking = o.status === 'cooking';
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-weight: 800; font-size: 16px;">โต๊ะ ${o.tableNumber || 'ไม่ระบุ'} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">(${o.id})</span></div>
+          <div style="font-weight: 800; font-size: 16px;">โต๊ะ ${o.tableNumber || 'ไม่ระบุ'} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">(${shortOrderCode(o.id)})</span></div>
             <span class="status-badge" style="background: ${isCooking ? '#ffedd5' : '#fef3c7'}; color: ${isCooking ? '#c2410c' : '#b45309'};">
               ${isCooking ? '🍳 กำลังปรุง' : '⏳ รอคิว'}
             </span>
@@ -4100,9 +4132,11 @@
       
       // Mark unpaid orders of this table as paid
       const tableOrders = orders.filter(o => o.tableNumber === selTable && o.status !== 'paid');
+      const paidAt = new Date().toISOString();
       tableOrders.forEach(o => {
         o.status = 'paid';
-        o.paidAt = new Date().toLocaleTimeString('th-TH');
+        o.paidAt = paidAt;
+        o.paid_at = paidAt;
         o.payMethod = payMethod;
         syncPOSOrderRecord(o, payMethod);
       });
@@ -4116,12 +4150,12 @@
       }
 
       saveState('SYNC');
-      openReceiptModal(selTable, payMethod);
+      openReceiptModal(selTable, payMethod, tableOrders, tableOrders[0] ? shortOrderCode(tableOrders[0].id) : '');
       renderAllViews();
       showToast(`💳 เช็คบิลโต๊ะ ${selTable} เรียบร้อยแล้ว`);
     }
 
-    function openReceiptModal(tableNo = 'S4', payMethod = 'QR ธนาคาร') {
+    function openReceiptModal(tableNo = 'S4', payMethod = 'QR ธนาคาร', selectedOrders = null, requestedBillNo = '') {
       const t = tables.find(item => item.number === tableNo) || tables[3];
       
       // Load store settings into receipt header
@@ -4132,15 +4166,16 @@
       document.getElementById('rcpt-pp-store-name').textContent = storeSettings.name;
       document.getElementById('rcpt-pp-number').textContent = `พร้อมเพย์ ${storeSettings.promptPay}`;
 
-      const billNo = 'PAY' + new Date().getFullYear().toString().slice(2) + '0529' + Math.floor(100000 + Math.random() * 900000);
+      const receiptOrders = Array.isArray(selectedOrders) ? selectedOrders : orders.filter(order => String(order.tableNumber || order.table_number) === String(tableNo) && order.status !== 'cancelled');
+      const billNo = requestedBillNo || (receiptOrders[0] ? shortOrderCode(receiptOrders[0].id) : 'PAY' + new Date().getFullYear().toString().slice(2) + Math.floor(100000 + Math.random() * 900000));
       document.getElementById('rcpt-bill-no').textContent = billNo;
-      document.getElementById('rcpt-bill-date').textContent = new Date().toLocaleDateString('th-TH') + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('rcpt-bill-date').textContent = receiptOrders[0] ? formatSalesDateTime(receiptOrders[0]) : new Date().toLocaleString('th-TH');
       document.getElementById('rcpt-table-no').textContent = `${t.number} (${t.seats} ท่าน)`;
 
-      // Calculate paid order amount or fallback demo 2,994.00
-      const paidOrders = orders.filter(o => o.tableNumber === tableNo);
-      let totalAmount = paidOrders.reduce((s, o) => s + o.total, 0);
-      if (totalAmount === 0) totalAmount = 2994.00;
+      const totalAmount = receiptOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      document.getElementById('rcpt-items-list').innerHTML = receiptOrders.flatMap(order => (order.items || []).map(item => `
+        <div class="receipt-row"><span>${custEscape(item.name)} × ${Number(item.qty) || 0}</span><span>${((Number(item.price) || 0) * (Number(item.qty) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span></div>
+      `)).join('') || '<div style="text-align:center;color:#64748b;font-size:11px;">ไม่มีรายการอาหาร</div>';
 
       document.getElementById('rcpt-subtotal').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
       document.getElementById('rcpt-net-total').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -4679,27 +4714,87 @@
     }
 
     // 18.12 SALES REPORT
+    function shortOrderCode(id) {
+      const raw = String(id || '').trim();
+      if (/^ORD-\d{6}-\d{3,}$/i.test(raw) || /^ORD-\d{1,6}$/i.test(raw)) return raw.toUpperCase();
+      const compact = raw.replace(/[^a-z0-9]/gi, '');
+      return compact ? `ORD-${compact.slice(-6).toUpperCase()}` : 'ORD-—';
+    }
+
+    function formatSalesDateTime(order) {
+      const date = dashboardOrderDate(order);
+      if (!date) return 'ไม่ระบุวันที่';
+      return date.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
     function renderSalesReport() {
       const tbody = document.getElementById('sales-history-tbody');
-      const paidOrders = orders.filter(o => o.status === 'paid');
+      const dateInput = document.getElementById('sales-history-date');
+      const allDates = document.getElementById('sales-history-all-dates');
+      const searchInput = document.getElementById('sales-history-search');
+      if (!dateInput.dataset.initialized) {
+        const now = new Date();
+        dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        dateInput.dataset.initialized = 'true';
+      }
+      dateInput.disabled = allDates.checked;
+      const query = String(searchInput.value || '').trim().toLocaleLowerCase();
+      const paidOrders = orders.filter(order => order.status === 'paid');
+      const visibleOrders = paidOrders.filter(order => {
+        const date = dashboardOrderDate(order);
+        const matchesDate = allDates.checked || (date && dashboardDateKey(date) === dateInput.value);
+        const searchable = `${shortOrderCode(order.id)} ${order.id || ''} ${order.tableNumber || order.table_number || ''} ${order.payMethod || order.payment_method || ''}`.toLocaleLowerCase();
+        return matchesDate && (!query || searchable.includes(query));
+      });
+      window.visibleSalesHistoryOrders = visibleOrders;
+      const total = visibleOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      document.getElementById('sales-history-summary').textContent = `${visibleOrders.length.toLocaleString('th-TH')} บิล · รวม ฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      if (paidOrders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มียอดขายหรือบิลที่ชำระแล้ว</td></tr>`;
+      if (!visibleOrders.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">${paidOrders.length ? 'ไม่พบบิลในวันที่หรือคำค้นนี้' : 'ยังไม่มียอดขายหรือบิลที่ชำระแล้ว'}</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = paidOrders.map(o => `
-        <tr>
-          <td class="col-code">${o.id}</td>
-          <td style="font-weight: 700;">โต๊ะ ${o.tableNumber}</td>
-          <td style="font-weight: 700; color: #059669;">฿${o.total.toLocaleString()}</td>
-          <td>${o.payMethod || 'QR ธนาคาร'}</td>
-          <td style="color: var(--text-muted);">${o.time}</td>
-          <td style="text-align: center;">
-            <button class="action-icon-btn" onclick="openReceiptModal('${o.tableNumber}')">🧾</button>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = visibleOrders.map(order => {
+        const code = shortOrderCode(order.id);
+        const table = String(order.tableNumber || order.table_number || '—');
+        const method = order.payMethod || order.payment_method || 'QR ธนาคาร';
+        return `
+          <tr>
+            <td class="col-code" title="${custEscape(order.id)}">${code}</td>
+            <td style="font-weight:700;">โต๊ะ ${custEscape(table)}</td>
+            <td style="font-weight:700;color:#059669;">฿${(Number(order.total) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${custEscape(method)}</td>
+            <td style="color:var(--text-muted);white-space:nowrap;">${formatSalesDateTime(order)}</td>
+            <td style="text-align:center;">
+              <button class="action-icon-btn" title="เปิดและพิมพ์ใบเสร็จ ${code}" aria-label="เปิดใบเสร็จ ${code}" onclick="openSalesReceipt('${custEscape(order.id)}')">🧾</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openSalesReceipt(orderId) {
+      const order = orders.find(item => String(item.id) === String(orderId));
+      if (!order) return showToast('ไม่พบบิลนี้');
+      openReceiptModal(order.tableNumber || order.table_number, order.payMethod || order.payment_method || 'QR ธนาคาร', [order], shortOrderCode(order.id));
+    }
+
+    function printSalesHistory() {
+      const rows = window.visibleSalesHistoryOrders || [];
+      if (!rows.length) return showToast('ไม่มีรายการให้พิมพ์');
+      const escapeHtml = value => custEscape(String(value == null ? '' : value));
+      const allDates = document.getElementById('sales-history-all-dates').checked;
+      const selectedDate = document.getElementById('sales-history-date').value;
+      const periodLabel = allDates ? 'ทุกวัน' : selectedDate ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('th-TH', { dateStyle: 'long' }) : 'ไม่ระบุวันที่';
+      const money = value => `฿${(Number(value) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const total = rows.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      const popup = window.open('', '_blank', 'width=900,height=700');
+      if (!popup) return showToast('เบราว์เซอร์บล็อกหน้าพิมพ์ กรุณาอนุญาตป๊อปอัปแล้วลองใหม่');
+      popup.document.write(`<!doctype html><html lang="th"><meta charset="utf-8"><title>ประวัติการขาย</title><style>body{font-family:Arial,sans-serif;color:#111827;padding:24px}h1{font-size:20px;margin:0 0 6px}.muted{color:#64748b;font-size:12px;margin-bottom:16px}.sum{font-weight:700;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#f1f5f9}@media print{body{padding:0}}</style><h1>${escapeHtml(storeSettings.name || 'ประวัติการขาย')}</h1><div class="muted">ประวัติการขาย · ${escapeHtml(periodLabel)} · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH')}</div><div class="sum">${rows.length} บิล · รวม ${money(total)}</div><table><thead><tr><th>เลขที่บิล</th><th>โต๊ะ</th><th>ยอดสุทธิ</th><th>วิธีชำระ</th><th>วันที่ / เวลา</th></tr></thead><tbody>${rows.map(order => `<tr><td>${escapeHtml(shortOrderCode(order.id))}</td><td>${escapeHtml(order.tableNumber || order.table_number || '—')}</td><td>${money(order.total)}</td><td>${escapeHtml(order.payMethod || order.payment_method || 'QR ธนาคาร')}</td><td>${escapeHtml(formatSalesDateTime(order))}</td></tr>`).join('')}</tbody></table></html>`);
+      popup.document.close();
+      popup.focus();
+      setTimeout(() => popup.print(), 300);
     }
 
     // 18.13 SUPPLIERS & PO
@@ -5300,6 +5395,7 @@
       renderBestSellersTable();
       renderOrdersList();
       renderKds();
+      renderSalesReport();
     }
 
     function applyPOSState(state) {
