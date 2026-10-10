@@ -1887,6 +1887,15 @@
             <div class="card-title">▦ จัดการโต๊ะ & ป้าย QR Code ประจำโต๊ะ</div>
             <button class="btn-primary" onclick="openAddTableModal()">➕ เพิ่มโต๊ะใหม่</button>
           </div>
+          <div id="manage-table-mobile-tools" style="display:none">
+            <label class="manage-table-search" for="manage-table-search-input">
+              <span aria-hidden="true">🔎</span>
+              <input id="manage-table-search-input" type="search" placeholder="ค้นหาเลขโต๊ะ เช่น S1" oninput="filterManageTables()" autocomplete="off">
+              <button type="button" onclick="clearManageTableSearch()" aria-label="ล้างคำค้น">ล้าง</button>
+            </label>
+            <div id="manage-table-zone-filters" aria-label="กรองตามโซน"></div>
+            <div id="manage-table-results" role="status" aria-live="polite"></div>
+          </div>
           <div class="table-grid" id="manage-tables-grid">
             <!-- Rendered dynamically with QR Code tent cards -->
           </div>
@@ -4970,8 +4979,23 @@
 
     function renderManageTables() {
       const grid = document.getElementById('manage-tables-grid');
-      grid.innerHTML = tables.map(t => `
-        <div class="table-card" style="cursor:pointer" onclick="openTableOrderPage('${t.number}')" title="คลิกเพื่อเปิดหน้าสั่งอาหารของโต๊ะ ${t.number}">
+      const search = document.getElementById('manage-table-search-input');
+      const zoneBar = document.getElementById('manage-table-zone-filters');
+      const query = String(search ? search.value : '').trim().toLocaleLowerCase();
+      const zones = [...new Set(tables.map(table => String(table.zone || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+      if (!window.manageTableZoneFilter) window.manageTableZoneFilter = 'ALL';
+      if (window.manageTableZoneFilter !== 'ALL' && !zones.includes(window.manageTableZoneFilter)) window.manageTableZoneFilter = 'ALL';
+      if (zoneBar) zoneBar.innerHTML = [{ value: 'ALL', label: 'ทุกโซน' }, ...zones.map(zone => ({ value: zone, label: `โซน ${zone}` }))].map(zone =>
+        `<button type="button" class="manage-zone-chip${window.manageTableZoneFilter === zone.value ? ' active' : ''}" aria-pressed="${window.manageTableZoneFilter === zone.value}" onclick="setManageTableZone('${custEscape(zone.value)}')">${custEscape(zone.label)}</button>`
+      ).join('');
+      const filteredTables = tables.filter(table =>
+        (window.manageTableZoneFilter === 'ALL' || String(table.zone || '') === window.manageTableZoneFilter) &&
+        (!query || String(table.number || '').toLocaleLowerCase().includes(query))
+      );
+      const results = document.getElementById('manage-table-results');
+      if (results) results.textContent = query || window.manageTableZoneFilter !== 'ALL' ? `พบ ${filteredTables.length} จาก ${tables.length} โต๊ะ` : `ทั้งหมด ${tables.length} โต๊ะ`;
+      grid.innerHTML = filteredTables.length ? filteredTables.map(t => `
+        <div class="table-card manage-table-card" style="cursor:pointer" onclick="openTableOrderPage('${t.number}')" title="คลิกเพื่อเปิดหน้าสั่งอาหารของโต๊ะ ${t.number}">
           <div class="table-card-top">
             <div>
               <div style="font-size: 24px; font-weight: 800;">${t.number}</div>
@@ -4986,12 +5010,28 @@
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเลือกเมนูและสั่งอาหาร</div>
           </div>
           <div class="table-actions">
+            <button class="btn-tbl-action manage-mobile-open" style="display:none" onclick="event.stopPropagation(); openTableOrderPage('${t.number}')">🍽️ เปิดโต๊ะ</button>
             <button class="btn-tbl-action" onclick="event.stopPropagation(); printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
-            <button class="action-icon-btn" style="color: #ef4444;" onclick="event.stopPropagation(); deleteTable('${t.id}')">🗑️</button>
+            <button class="action-icon-btn manage-table-delete" style="color: #ef4444;" aria-label="ลบโต๊ะ ${custEscape(t.number)}" onclick="event.stopPropagation(); deleteTable('${t.id}')">🗑️</button>
           </div>
         </div>
-      `).join('');
+      `).join('') : '<div class="manage-table-empty">ไม่พบโต๊ะที่ตรงกับการค้นหา</div>';
 
+    }
+
+    function setManageTableZone(zone) {
+      window.manageTableZoneFilter = zone || 'ALL';
+      renderManageTables();
+    }
+
+    function filterManageTables() { renderManageTables(); }
+
+    function clearManageTableSearch() {
+      const input = document.getElementById('manage-table-search-input');
+      if (!input) return;
+      input.value = '';
+      renderManageTables();
+      input.focus();
     }
 
     function openAddTableModal() {
