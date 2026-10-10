@@ -2959,7 +2959,9 @@
     let lastPOSStateUpdatedAt = '';
     let posCloudSyncTimer = null;
     let posOrderSyncInitialized = false;
-    let tableCallAdminKey = '';
+    let tableCallAdminToken = '';
+    const TABLECALL_ADMIN_SESSION_KEY = 'tablecall_admin_session_v1';
+    const TABLECALL_ADMIN_SESSION_TTL = 6 * 60 * 60 * 1000;
 
     function openAdminLogin() {
       const overlay = document.getElementById('admin-login-overlay');
@@ -2985,8 +2987,12 @@
       button.textContent = 'กำลังตรวจสอบ…';
       error.textContent = '';
       try {
-        await tableCallGas('checkAdminKey', { adminKey: key });
-        tableCallAdminKey = key;
+        const login = await tableCallGas('loginAdmin', { adminKey: key });
+        if (!login || !login.token) throw new Error('Apps Script ไม่ได้ส่งโทเคนกลับมา ให้อัปเดต Code.gs และ Deploy เวอร์ชันใหม่');
+        tableCallAdminToken = login.token;
+        try {
+          localStorage.setItem(TABLECALL_ADMIN_SESSION_KEY, JSON.stringify({ token: login.token, expiresAt: Date.now() + Math.min(Number(login.expiresIn) || 21600, TABLECALL_ADMIN_SESSION_TTL / 1000) * 1000 }));
+        } catch (storageError) { console.warn('Admin session will be remembered only for this page', storageError); }
         document.getElementById('admin-login-overlay').classList.remove('open');
         document.getElementById('sidebar').style.visibility = '';
         document.getElementById('main-wrapper').style.visibility = '';
@@ -3007,8 +3013,8 @@
     function tableCallGas(action, payload = {}, needsAdmin = false) {
       if (!TABLECALL_APPS_SCRIPT_URL) return Promise.reject(new Error('ยังไม่ได้ตั้งค่า Apps Script URL'));
       if (needsAdmin) {
-        if (!tableCallAdminKey) return Promise.reject(new Error('กรุณาเข้าสู่ระบบผู้ดูแลใหม่'));
-        payload = { ...payload, adminKey: tableCallAdminKey };
+        if (!tableCallAdminToken) return Promise.reject(new Error('กรุณาเข้าสู่ระบบผู้ดูแลใหม่'));
+        payload = { ...payload, adminToken: tableCallAdminToken };
       }
       const callbackName = `tableCall_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       return new Promise((resolve, reject) => {
@@ -3019,8 +3025,9 @@
           script.remove();
           if (error) return reject(error);
           if (result && result.error) {
-            if (String(result.error).includes('รหัสผู้ดูแล')) {
-              tableCallAdminKey = '';
+            if (/รหัสผู้ดูแล|เซสชันผู้ดูแล/.test(String(result.error))) {
+              tableCallAdminToken = '';
+              localStorage.removeItem(TABLECALL_ADMIN_SESSION_KEY);
               openAdminLogin();
             }
             return reject(new Error(result.error));
@@ -4917,8 +4924,21 @@
       const customerView = viewParam === 'customer' || !!tableParam;
 
       if (!customerView) {
-        const loggedIn = await openAdminLogin();
-        if (!loggedIn) return;
+        let sessionValid = false;
+        try {
+          const stored = JSON.parse(localStorage.getItem(TABLECALL_ADMIN_SESSION_KEY) || 'null');
+          if (stored && stored.token && Number(stored.expiresAt) > Date.now()) {
+            await tableCallGas('checkAdminSession', { adminToken: stored.token });
+            tableCallAdminToken = stored.token;
+            sessionValid = true;
+          }
+        } catch (err) {
+          localStorage.removeItem(TABLECALL_ADMIN_SESSION_KEY);
+        }
+        if (!sessionValid) {
+          const loggedIn = await openAdminLogin();
+          if (!loggedIn) return;
+        }
       }
 
       try {
@@ -5188,12 +5208,13 @@
     <form class="modal-box admin-login-card" onsubmit="submitAdminLogin(event)">
       <div class="admin-login-icon">🔐</div>
       <h2 style="text-align:center;margin:0 0 6px;font-size:21px">เข้าสู่ระบบผู้ดูแล</h2>
-      <p style="text-align:center;color:#64748b;font-size:13px;margin:0 0 20px">กรอกรหัส ADMIN_KEY เพื่อเข้าใช้งานระบบจัดการร้าน</p>
+      <p style="text-align:center;color:#64748b;font-size:13px;margin:0 0 20px">กรอกรหัสผู้ดูแลเพื่อเข้าใช้งานระบบจัดการร้าน</p>
       <label for="admin-login-key" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">รหัสผู้ดูแล</label>
-      <input id="admin-login-key" class="form-input" type="password" autocomplete="current-password" placeholder="กรอกรหัส ADMIN_KEY" required>
+      <input id="admin-login-key" class="form-input" type="password" autocomplete="off" placeholder="กรอกรหัสผู้ดูแล" required>
       <div id="admin-login-error" role="alert"></div>
       <button id="admin-login-submit" class="btn-primary" type="submit" style="width:100%;padding:11px;border-radius:9px">เข้าสู่ระบบ</button>
-      <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:14px">เพื่อความปลอดภัย ระบบจะถามรหัสใหม่ทุกครั้งที่เปิดหน้า</div>
+      <a href="https://script.google.com/macros/s/AKfycbxiNS7b0hvG7Knu4qn00WzEjpNwnnquWcB1jnl5-7yWHKGns9tfa3DefyPEp4tPR_VC/exec" target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;margin-top:12px">ทดสอบเปิด Apps Script ในแท็บใหม่</a>
+      <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:10px">จำการเข้าสู่ระบบในเครื่องนี้ได้สูงสุด 6 ชั่วโมง</div>
     </form>
   </div>
 </body>
