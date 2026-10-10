@@ -1360,7 +1360,7 @@
 
     <nav class="sidebar-menu">
       <div class="menu-group-title">หลัก</div>
-      <a class="sidebar-item" data-view="dashboard" onclick="switchNav('dashboard')">
+      <a class="sidebar-item" data-view="dashboard" data-owner-only="true" onclick="switchNav('dashboard')">
         <span class="item-icon">⊞</span>
         <span>แดชบอร์ด</span>
       </a>
@@ -1422,7 +1422,7 @@
         <span class="item-icon">📊</span>
         <span>สินค้าขายดี</span>
       </a>
-      <a class="sidebar-item" data-view="profit-loss" onclick="switchNav('profit-loss')">
+      <a class="sidebar-item" data-view="profit-loss" data-owner-only="true" onclick="switchNav('profit-loss')">
         <span class="item-icon">⚖️</span>
         <span>กำไร/ขาดทุน</span>
       </a>
@@ -1633,7 +1633,7 @@
       </section>
 
       <!-- VIEW 5: แดชบอร์ด (DASHBOARD) -->
-      <section id="view-dashboard" class="view-section">
+      <section id="view-dashboard" class="view-section" data-owner-only="true">
         <div class="stats-bar">
           <div class="stat-card">
             <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">💰</div>
@@ -1877,7 +1877,7 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">👤 บุคลากร & พนักงาน</div>
-            <button class="btn-primary" id="staff-add-button" onclick="openAddStaffModal()">➕ เพิ่มพนักงาน</button>
+            <button class="btn-primary" id="staff-add-button" data-owner-only="true" onclick="openAddStaffModal()">➕ เพิ่มพนักงาน</button>
           </div>
           <div id="staff-sync-status" role="status" style="margin:0 0 14px;color:var(--text-muted);font-size:13px"></div>
           <div class="table-grid" id="staff-grid">
@@ -2109,7 +2109,7 @@
       </section>
 
       <!-- VIEW 21: กำไร/ขาดทุน -->
-      <section id="view-profit-loss" class="view-section">
+      <section id="view-profit-loss" class="view-section" data-owner-only="true">
         <div class="content-card">
           <div class="card-title" style="margin-bottom: 20px;">⚖️ สรุปกำไร / ขาดทุน</div>
           <div class="stats-bar">
@@ -2941,7 +2941,18 @@
     function updateSignedInUserLabel() {
       if (!tableCallUser) return;
       document.querySelectorAll('.user-name').forEach(node => { node.textContent = tableCallUser.name || 'พนักงาน'; });
-      document.querySelectorAll('.user-role').forEach(node => { node.textContent = tableCallUser.role === 'owner' ? 'เจ้าของร้าน' : (tableCallUser.role || 'พนักงาน'); });
+      document.querySelectorAll('.user-role').forEach(node => { node.textContent = tableCallUser.role === 'owner' ? 'เจ้าของร้าน' : (tableCallUser.position || 'พนักงาน'); });
+      applyRoleAccess();
+    }
+
+    function isStoreOwner() {
+      return Boolean(tableCallUser && tableCallUser.role === 'owner');
+    }
+
+    function applyRoleAccess() {
+      document.querySelectorAll('[data-owner-only="true"]').forEach(node => {
+        node.style.display = isStoreOwner() ? '' : 'none';
+      });
     }
 
     async function logoutAdmin() {
@@ -2966,7 +2977,7 @@
       error.textContent = '';
       accountSelect.innerHTML = '<option value="">กำลังโหลดบัญชี...</option>';
       tableCallGas('listLoginAccounts').then(accounts => {
-        accountSelect.innerHTML = '<option value="">เลือกบัญชีผู้ใช้</option>' + (accounts || []).map(account => `<option value="${custEscape(account.employee_id)}">${custEscape(account.name)}${account.role === 'owner' ? ' • เจ้าของร้าน' : ' • พนักงาน'}</option>`).join('');
+        accountSelect.innerHTML = '<option value="">เลือกบัญชีผู้ใช้</option>' + (accounts || []).map(account => `<option value="${custEscape(account.employee_id)}">${custEscape(account.name)}${account.role === 'owner' ? ' • เจ้าของร้าน' : ` • ${custEscape(account.position || 'พนักงาน')}`}</option>`).join('');
       }).catch(err => { accountSelect.innerHTML = '<option value="">โหลดบัญชีไม่สำเร็จ</option>'; error.textContent = explainAppsScriptError(err); });
       setTimeout(() => input.focus(), 0);
       return new Promise(resolve => { window.completeAdminLogin = resolve; });
@@ -3328,6 +3339,10 @@
 
     // ── 17. NAVIGATION ROUTER ──
     function switchNav(viewName) {
+      if ((viewName === 'dashboard' || viewName === 'profit-loss') && !isStoreOwner()) {
+        showToast('หน้านี้สำหรับเจ้าของร้านเท่านั้น');
+        viewName = 'floor';
+      }
       currentView = viewName;
 
       document.querySelectorAll('.sidebar-item').forEach(item => {
@@ -3372,6 +3387,7 @@
     }
 
     function renderSpecificView(name) {
+      if ((name === 'dashboard' || name === 'profit-loss') && !isStoreOwner()) return;
       if (name === 'floor') renderFloorTables();
       if (name === 'dashboard') renderDashboard();
       if (name === 'members') renderMembersTable();
@@ -3399,6 +3415,7 @@
 
     // 18.1 DASHBOARD
     function renderDashboard() {
+      if (!isStoreOwner()) return;
       const todayKey = new Date().toLocaleDateString('en-CA');
       const isToday = order => {
         const raw = order.created_at || order.createdAt || order.paidAt;
@@ -4437,6 +4454,7 @@
 
     // 18.11 PROFIT / LOSS
     function renderProfitLoss() {
+      if (!isStoreOwner()) return;
       const paidOrders = orders.filter(o => o.status === 'paid');
       const totalSales = paidOrders.reduce((s, o) => s + (o.total || 0), 0);
       const totalExp = expensesList.reduce((s, e) => s + (e.amount || 0), 0);
@@ -4651,7 +4669,7 @@
         const ownAccount = tableCallUser && String(tableCallUser.employee_id) === String(employee.employee_id);
         const shift = attendanceRows.find(row => String(row.employee_id) === String(employee.employee_id) && String(row.work_date).slice(0, 10) === todayKey && !row.clock_out);
         const employmentType = employee.employment_type === 'part_time' ? 'พาร์ทไทม์' : employee.employment_type === 'full_time' ? 'ประจำ' : '';
-        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.role || 'พนักงาน')}${employmentType ? ` • ${employmentType}` : ''}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
+        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.position || 'พนักงาน')}${employmentType ? ` • ${employmentType}` : ''}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
       }).join('');
     }
 
@@ -4679,7 +4697,7 @@
       const error = document.getElementById('staff-modal-error');
       const button = document.getElementById('staff-save-button');
       const name = document.getElementById('staff-name-input').value.trim();
-      const role = document.getElementById('staff-role-input').value.trim();
+      const position = document.getElementById('staff-role-input').value.trim();
       const employmentType = document.getElementById('staff-employment-type').value;
       const pin = document.getElementById('staff-pin-input').value.trim();
       const pinConfirm = document.getElementById('staff-pin-confirm').value.trim();
@@ -4688,7 +4706,7 @@
       button.textContent = 'กำลังบันทึก…';
       error.textContent = '';
       try {
-        await tableCallGasPost('createStaff', { staff: { name, role, employmentType, pin } }, true);
+        await tableCallGasPost('createStaff', { staff: { name, position, employmentType, pin } }, true);
         closeStaffModal();
         await refreshEmployeeData();
         showToast(`✅ เพิ่มพนักงาน${employmentType === 'part_time' ? 'พาร์ทไทม์' : 'ประจำ'} ${name} แล้ว`);
