@@ -1877,13 +1877,51 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">👤 บุคลากร & พนักงาน</div>
-            <button class="btn-primary" onclick="openAddStaffModal()">➕ เพิ่มพนักงาน</button>
+            <button class="btn-primary" id="staff-add-button" onclick="openAddStaffModal()">➕ เพิ่มพนักงาน</button>
           </div>
+          <div id="staff-sync-status" role="status" style="margin:0 0 14px;color:var(--text-muted);font-size:13px"></div>
           <div class="table-grid" id="staff-grid">
             <!-- Rendered dynamically -->
           </div>
         </div>
       </section>
+
+      <div class="modal-overlay" id="staff-modal">
+        <form class="modal-box" onsubmit="submitNewStaff(event)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="font-size:18px;font-weight:800">➕ เพิ่มพนักงาน</h3>
+            <button type="button" onclick="closeStaffModal()" style="border:none;background:none;font-size:18px;cursor:pointer">✕</button>
+          </div>
+          <div class="form-group">
+            <label for="staff-name-input">ชื่อพนักงาน</label>
+            <input id="staff-name-input" class="form-input" type="text" maxlength="80" autocomplete="name" required placeholder="กรอกชื่อพนักงาน">
+          </div>
+          <div class="form-group">
+            <label for="staff-role-input">ตำแหน่ง</label>
+            <input id="staff-role-input" class="form-input" type="text" maxlength="60" required value="พนักงานบริการ" placeholder="เช่น เชฟ, แคชเชียร์, พนักงานบริการ">
+          </div>
+          <div class="form-group">
+            <label for="staff-employment-type">ประเภทการจ้าง</label>
+            <select id="staff-employment-type" class="form-input" required>
+              <option value="full_time">พนักงานประจำ</option>
+              <option value="part_time">พนักงานพาร์ทไทม์</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="staff-pin-input">PIN สำหรับเข้าสู่ระบบ (4–12 หลัก)</label>
+            <input id="staff-pin-input" class="form-input" type="password" inputmode="numeric" autocomplete="new-password" minlength="4" maxlength="12" pattern="[0-9]{4,12}" required placeholder="ตัวเลข 4–12 หลัก">
+          </div>
+          <div class="form-group">
+            <label for="staff-pin-confirm">ยืนยัน PIN</label>
+            <input id="staff-pin-confirm" class="form-input" type="password" inputmode="numeric" autocomplete="new-password" minlength="4" maxlength="12" pattern="[0-9]{4,12}" required placeholder="กรอก PIN ซ้ำอีกครั้ง">
+          </div>
+          <div id="staff-modal-error" role="alert" style="min-height:18px;color:#dc2626;font-size:13px"></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button id="staff-save-button" class="btn-primary" type="submit" style="flex:1;justify-content:center">💾 บันทึกพนักงาน</button>
+            <button class="btn-tbl-action" type="button" onclick="closeStaffModal()">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
 
       <!-- VIEW 12: ลงเวลา (ATTENDANCE) -->
       <section id="view-attendance" class="view-section">
@@ -4584,25 +4622,36 @@
 
     // Staff and attendance are kept in dedicated Sheets, separate from POSState.
     async function refreshEmployeeData() {
-      const [employees, records] = await Promise.all([tableCallGas('listStaff', {}, true), tableCallGas('listAttendance', {}, true)]);
-      employeeRecords = employees || [];
-      attendanceRows = records || [];
-      renderStaff();
-      renderAttendance();
+      const status = document.getElementById('staff-sync-status');
+      if (status) status.textContent = 'กำลังโหลดรายชื่อพนักงานและข้อมูลลงเวลา…';
+      try {
+        const [employees, records] = await Promise.all([tableCallGas('listStaff', {}, true), tableCallGas('listAttendance', {}, true)]);
+        if (!Array.isArray(employees) || !Array.isArray(records)) throw new Error('รูปแบบข้อมูลพนักงานจาก Apps Script ไม่ถูกต้อง กรุณาอัปเดต Code.gs และ Deploy เวอร์ชันใหม่');
+        employeeRecords = employees;
+        attendanceRows = records;
+        employeeSyncLastAt = Date.now();
+        renderStaff();
+        renderAttendance();
+        if (status) status.textContent = `เชื่อมต่อข้อมูลพนักงานแล้ว • ${employeeRecords.length} บัญชี`;
+      } catch (err) {
+        if (status) status.innerHTML = `<span style="color:#dc2626">โหลดข้อมูลไม่สำเร็จ: ${custEscape(explainAppsScriptError(err))}</span> <button class="btn-tbl-action" onclick="refreshEmployeeData().catch(()=>{})">ลองอีกครั้ง</button>`;
+        const grid = document.getElementById('staff-grid');
+        if (grid && !employeeRecords.length) grid.innerHTML = '<div style="padding:20px;color:var(--text-muted)">ยังแสดงข้อมูลพนักงานไม่ได้ กรุณาตรวจสอบการเชื่อมต่อและกดลองอีกครั้ง</div>';
+        throw err;
+      }
     }
 
     function renderStaff() {
       const grid = document.getElementById('staff-grid');
-      const addButton = document.querySelector('#view-staff .card-header-flex .btn-primary');
       const isOwner = tableCallUser && tableCallUser.role === 'owner';
-      if (addButton) addButton.style.display = isOwner ? '' : 'none';
       if (!employeeRecords.length) { grid.innerHTML = '<div style="padding:20px;color:var(--text-muted)">ยังไม่มีข้อมูลพนักงาน</div>'; return; }
       const now = new Date();
       const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       grid.innerHTML = employeeRecords.map(employee => {
         const ownAccount = tableCallUser && String(tableCallUser.employee_id) === String(employee.employee_id);
         const shift = attendanceRows.find(row => String(row.employee_id) === String(employee.employee_id) && String(row.work_date).slice(0, 10) === todayKey && !row.clock_out);
-        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.role || 'พนักงาน')}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
+        const employmentType = employee.employment_type === 'part_time' ? 'พาร์ทไทม์' : employee.employment_type === 'full_time' ? 'ประจำ' : '';
+        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.role || 'พนักงาน')}${employmentType ? ` • ${employmentType}` : ''}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
       }).join('');
     }
 
@@ -4614,13 +4663,41 @@
 
     function openAddStaffModal() {
       if (!tableCallUser || tableCallUser.role !== 'owner') { showToast('เฉพาะเจ้าของร้านเท่านั้นที่เพิ่มพนักงานได้'); return; }
-      const name = (prompt('กรอกชื่อพนักงานใหม่:') || '').trim();
-      if (!name) return;
-      const role = (prompt('ตำแหน่ง เช่น เชฟ, แคชเชียร์, พนักงานบริการ:') || 'พนักงานบริการ').trim();
-      const pin = (prompt('ตั้ง PIN ตัวเลข 4–12 หลักให้พนักงาน:') || '').trim();
-      if (!/^\d{4,12}$/.test(pin)) { showToast('PIN ต้องเป็นตัวเลข 4–12 หลัก'); return; }
-      if (pin !== (prompt('กรอก PIN ซ้ำเพื่อยืนยัน:') || '').trim()) { showToast('PIN ไม่ตรงกัน ยกเลิกการเพิ่มพนักงาน'); return; }
-      tableCallGasPost('createStaff', { staff: { name, role, pin } }, true).then(() => refreshEmployeeData()).then(() => showToast(`✅ เพิ่มบัญชีพนักงาน ${name} แล้ว`)).catch(err => showToast(`เพิ่มพนักงานไม่สำเร็จ: ${err.message}`));
+      document.getElementById('staff-modal-error').textContent = '';
+      document.getElementById('staff-modal').classList.add('open');
+      document.getElementById('staff-name-input').focus();
+    }
+
+    function closeStaffModal() {
+      document.getElementById('staff-modal').classList.remove('open');
+      document.querySelector('#staff-modal form').reset();
+      document.getElementById('staff-modal-error').textContent = '';
+    }
+
+    async function submitNewStaff(event) {
+      event.preventDefault();
+      const error = document.getElementById('staff-modal-error');
+      const button = document.getElementById('staff-save-button');
+      const name = document.getElementById('staff-name-input').value.trim();
+      const role = document.getElementById('staff-role-input').value.trim();
+      const employmentType = document.getElementById('staff-employment-type').value;
+      const pin = document.getElementById('staff-pin-input').value.trim();
+      const pinConfirm = document.getElementById('staff-pin-confirm').value.trim();
+      if (pin !== pinConfirm) { error.textContent = 'PIN ทั้งสองช่องไม่ตรงกัน'; return; }
+      button.disabled = true;
+      button.textContent = 'กำลังบันทึก…';
+      error.textContent = '';
+      try {
+        await tableCallGasPost('createStaff', { staff: { name, role, employmentType, pin } }, true);
+        closeStaffModal();
+        await refreshEmployeeData();
+        showToast(`✅ เพิ่มพนักงาน${employmentType === 'part_time' ? 'พาร์ทไทม์' : 'ประจำ'} ${name} แล้ว`);
+      } catch (err) {
+        error.textContent = explainAppsScriptError(err);
+      } finally {
+        button.disabled = false;
+        button.textContent = '💾 บันทึกพนักงาน';
+      }
     }
 
     function toggleStaffShift() {
