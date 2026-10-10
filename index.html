@@ -4533,8 +4533,12 @@
 
     // 18.15 MANAGE TABLES & QR CODES
     function tableOrderUrl(tableNumber) {
-      const url = new URL(TABLECALL_APPS_SCRIPT_URL);
-      url.searchParams.set('page', 'order');
+      // Apps Script's API works, but its HtmlService customer page currently
+      // redirects to a Google Drive error. Keep the order UI on GitHub Pages;
+      // it still reads and writes the same Google Sheets through the Apps Script API.
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
       url.searchParams.set('table', tableNumber);
       return url.toString();
     }
