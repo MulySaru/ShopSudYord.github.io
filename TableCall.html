@@ -2564,6 +2564,7 @@
             <!-- Populated dynamically -->
           </select>
         </div>
+        <button class="btn-tbl-action" style="margin:12px auto 0;background:#fff;color:#4338ca;border-color:#c7d2fe;" onclick="openTableOrderPage(document.getElementById('sim-table-select').value)">🍽️ เปิดหน้าสั่งอาหารโต๊ะนี้</button>
       </div>
 
       <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
@@ -3493,7 +3494,7 @@
         const qtyEl = document.getElementById(`order-qty-${m.id}`);
         const qty = qtyEl ? (parseInt(qtyEl.textContent, 10) || 0) : 0;
         if (qty > 0) {
-          selectedItems.push({ name: m.name, price: m.price, qty: qty });
+          selectedItems.push({ menuId: String(m.id), name: m.name, price: m.price, qty: qty });
           total += m.price * qty;
         }
       });
@@ -4414,10 +4415,26 @@
     }
 
     // 18.15 MANAGE TABLES & QR CODES
+    function tableOrderUrl(tableNumber) {
+      const url = new URL(TABLECALL_APPS_SCRIPT_URL);
+      url.searchParams.set('page', 'order');
+      url.searchParams.set('table', tableNumber);
+      return url.toString();
+    }
+
+    function openTableOrderPage(tableNumber) {
+      window.open(tableOrderUrl(tableNumber), '_blank', 'noopener');
+    }
+
+    function tableQrImageUrl(tableNumber, size = 180) {
+      const data = encodeURIComponent(tableOrderUrl(tableNumber));
+      return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=M&margin=2&data=${data}`;
+    }
+
     function renderManageTables() {
       const grid = document.getElementById('manage-tables-grid');
       grid.innerHTML = tables.map(t => `
-        <div class="table-card">
+        <div class="table-card" style="cursor:pointer" onclick="openTableOrderPage('${t.number}')" title="คลิกเพื่อเปิดหน้าสั่งอาหารของโต๊ะ ${t.number}">
           <div class="table-card-top">
             <div>
               <div style="font-size: 24px; font-weight: 800;">${t.number}</div>
@@ -4426,32 +4443,26 @@
             <span class="status-badge status-available">เปิดใช้งาน</span>
           </div>
           <div style="margin: 12px 0; text-align: center;">
-            <div id="qr-thumb-${t.id}" style="display: flex; justify-content: center;"></div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเรียกพนักงาน</div>
+            <a href="${tableOrderUrl(t.number)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="เปิดหน้าสั่งอาหารโต๊ะ ${t.number}">
+              <img src="${tableQrImageUrl(t.number, 180)}" alt="QR สั่งอาหารโต๊ะ ${t.number}" width="112" height="112" loading="lazy" style="display:block;image-rendering:pixelated">
+            </a>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเลือกเมนูและสั่งอาหาร</div>
           </div>
           <div class="table-actions">
-            <button class="btn-tbl-action" onclick="printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
-            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteTable('${t.id}')">🗑️</button>
+            <button class="btn-tbl-action" onclick="event.stopPropagation(); printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
+            <button class="action-icon-btn" style="color: #ef4444;" onclick="event.stopPropagation(); deleteTable('${t.id}')">🗑️</button>
           </div>
         </div>
       `).join('');
 
-      setTimeout(() => {
-        tables.forEach(t => {
-          const el = document.getElementById(`qr-thumb-${t.id}`);
-          if (el) {
-            el.innerHTML = '';
-            const url = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(t.number)}&view=customer`;
-            const c = QRCodeLib.createCanvas(url, 110);
-            el.appendChild(c);
-          }
-        });
-      }, 20);
     }
 
     function openAddTableModal() {
-      const num = prompt('กรอกหมายเลขโต๊ะใหม่ (เช่น A7, B5, S9):');
-      if (!num) return;
+      const input = prompt('กรอกหมายเลขโต๊ะใหม่ (เช่น A7, B5, S9):');
+      if (!input) return;
+      const num = input.trim().toUpperCase();
+      if (!/^[A-Z0-9-]{1,20}$/.test(num)) { alert('ใช้ตัวอักษรอังกฤษ ตัวเลข หรือขีดกลาง ความยาวไม่เกิน 20 ตัว'); return; }
+      if (tables.some(table => String(table.number).toUpperCase() === num)) { alert('มีหมายเลขโต๊ะนี้แล้ว'); return; }
       const zone = prompt('โซน (S, A, B, VIP):', 'S') || 'S';
       const seats = parseInt(prompt('จำนวนที่นั่ง:', '4'), 10) || 4;
       tables.push({ id: 'tbl_' + Date.now(), number: num, zone, seats, status: 'idle', callNote: '', callTime: null });
@@ -4472,7 +4483,11 @@
     function printTableTentCard(id) {
       const t = tables.find(item => item.id === id);
       if (!t) return;
-      window.print();
+      const url = tableOrderUrl(t.number);
+      const popup = window.open('', '_blank', 'width=520,height=680');
+      if (!popup) { alert('กรุณาอนุญาตป๊อปอัปเพื่อพิมพ์ป้าย QR'); return; }
+      popup.document.write(`<!doctype html><html lang="th"><meta charset="utf-8"><title>ป้ายโต๊ะ ${t.number}</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:28px;color:#172033}.qr{width:300px;height:300px}h1{font-size:36px;margin:8px}p{font-size:18px}@media print{button{display:none}}</style><h1>โต๊ะ ${t.number}</h1><p>${storeSettings.name || 'ร้านอาหาร'}</p><img class="qr" src="${tableQrImageUrl(t.number, 500)}"><p>สแกนเพื่อเลือกเมนูและสั่งอาหาร</p><button onclick="window.print()">พิมพ์ป้าย</button></html>`);
+      popup.document.close();
     }
 
     // 18.16 CATEGORIES, BUFFET, ZONES
