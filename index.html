@@ -4707,7 +4707,17 @@
     async function commitMenuCatalog(nextItems, nextCategories) {
       if (!isStoreOwner()) { showToast('เฉพาะเจ้าของร้านเท่านั้นที่จัดการเมนูและหมวดหมู่ได้'); return false; }
       try {
-        await tableCallGasPost('savePOSMenu', { menuItems: nextItems, categories: nextCategories }, true);
+        try {
+          await tableCallGasPost('savePOSMenu', { menuItems: nextItems, categories: nextCategories }, true);
+        } catch (error) {
+          // Older deployments may not expose the dedicated menu action yet.
+          // The established savePOSState action already accepts menu/catalog
+          // updates and enforces the owner role on the server.
+          if (!/Unknown action/i.test(String(error && error.message || error))) throw error;
+          await tableCallGasPost('savePOSState', {
+            state: { ...currentSharedPOSState(), menuItems: nextItems, categories: nextCategories }
+          }, true);
+        }
         menuItems = normalizeMenuCatalog(nextItems);
         menuCategories = [...nextCategories];
         saveState('SYNC', null, true);
