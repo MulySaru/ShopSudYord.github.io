@@ -246,3 +246,47 @@
   body:not(.customer-order-mode) .manage-table-card > div:nth-child(2) img { width: 68px !important; height: 68px !important; }
   body:not(.customer-order-mode) .manage-table-card .table-actions { gap: 6px; }
 }
+
+/* Make food categories easy to spot and tap on touch screens. */
+@media screen and (max-width: 1100px) {
+  body.customer-order-mode .cust-category-label {
+    display: block; margin: 0 0 8px; color: #172554; font-size: 14px; font-weight: 800;
+  }
+  body.customer-order-mode .cust-cat-scroll {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+    overflow: visible; margin: 0 0 14px; padding: 10px; border: 1px solid #dbe3f2;
+    border-radius: 14px; background: #f8faff; box-shadow: 0 2px 8px rgba(15,23,42,.06);
+  }
+  body.customer-order-mode .cust-cat-pill {
+    display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 46px;
+    padding: 8px 10px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff;
+    color: #26344b; font-size: 13px; font-weight: 750; line-height: 1.25; text-align: center;
+    white-space: normal; box-shadow: 0 1px 3px rgba(15,23,42,.08);
+  }
+  body.customer-order-mode .cust-cat-pill.active {
+    border-color: #4338ca; background: #4338ca; color: #fff;
+    box-shadow: 0 3px 9px rgba(67,56,202,.25);
+  }
+  body:not(.customer-order-mode) #view-menu #categories-chips {
+    display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px !important;
+  }
+  body:not(.customer-order-mode) #view-menu #categories-chips > div {
+    display: grid !important; grid-template-columns: minmax(0, 1fr) 42px 42px; gap: 6px !important;
+    min-width: 0; min-height: 52px; align-items: center; padding: 6px 8px 6px 11px !important;
+    border: 1px solid #cbd5e1 !important; border-radius: 12px !important; background: #f8faff !important;
+    color: #172554; font-size: 14px !important; font-weight: 750 !important;
+    box-shadow: 0 2px 6px rgba(15,23,42,.06);
+  }
+  body:not(.customer-order-mode) #view-menu #categories-chips > div > span {
+    min-width: 0; overflow-wrap: anywhere; line-height: 1.3;
+  }
+  body:not(.customer-order-mode) #view-menu #categories-chips .action-icon-btn {
+    display: inline-flex; width: 42px; min-width: 42px; height: 42px; min-height: 42px;
+    align-items: center; justify-content: center; padding: 0; border-radius: 10px;
+    background: #fff; font-size: 15px;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  body.customer-order-mode .cust-cat-scroll { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
