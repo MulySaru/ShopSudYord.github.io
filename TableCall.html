@@ -1526,7 +1526,7 @@
         <button class="btn-header-action" style="background: #eef2ff; color: #4338ca; border-color: #c7d2fe;" onclick="openCustomerSimulatorModal()">
           📱 จำลองลูกค้าสแกน QR
         </button>
-        <button class="notif-bell-btn" onclick="switchNav('floor')" title="การแจ้งเตือนโต๊ะเรียก">
+        <button class="notif-bell-btn" onclick="enableOrderNotifications()" title="เปิดการแจ้งเตือนออเดอร์ และแสดงโต๊ะเรียก">
           🔔
           <span class="notif-bell-badge" id="top-bell-badge" style="display: none;">0</span>
         </button>
@@ -2953,6 +2953,7 @@
     let posStateSaveTimer = null;
     let lastPOSStateUpdatedAt = '';
     let posCloudSyncTimer = null;
+    let posOrderSyncInitialized = false;
 
     function currentSharedPOSState() {
       return { tables, menuItems, settings: storeSettings, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
@@ -3192,6 +3193,35 @@
       } catch (e) {
         console.warn('Audio play restricted:', e);
       }
+    }
+
+    async function enableOrderNotifications() {
+      switchNav('floor');
+      playChimeSound('calling');
+      if (!('Notification' in window)) {
+        showToast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนบนหน้าจอ');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        showToast('✅ เปิดการแจ้งเตือนออเดอร์แล้ว');
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        showToast('การแจ้งเตือนถูกปิดในเบราว์เซอร์ กรุณาอนุญาตการแจ้งเตือนให้เว็บไซต์นี้');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      showToast(permission === 'granted' ? '✅ เปิดการแจ้งเตือนออเดอร์แล้ว' : 'ยังไม่ได้อนุญาตการแจ้งเตือนบนหน้าจอ');
+    }
+
+    function notifyIncomingPOSOrder(order) {
+      const title = `ออเดอร์ใหม่ โต๊ะ ${order.tableNumber || order.table_number || '-'}`;
+      const items = (order.items || []).map(item => `${item.name} ×${item.qty}`).join(', ');
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification(title, { body: items || 'มีรายการอาหารใหม่', tag: `tablecall-${order.id}` }); } catch (err) { console.warn('Desktop notification failed', err); }
+      }
+      playChimeSound('calling');
+      showToast(`🔔 ${title}: ${items || 'มีรายการอาหารใหม่'}`);
     }
 
     function playTone(ctx, freq, startTime, duration) {
@@ -4503,11 +4533,8 @@
 
     // 18.15 MANAGE TABLES & QR CODES
     function tableOrderUrl(tableNumber) {
-      // Use the public POS page for QR ordering. Apps Script remains the data API,
-      // avoiding the Google Drive interstitial some deployments show for HTML routes.
-      const url = new URL(window.location.href);
-      url.search = '';
-      url.hash = '';
+      const url = new URL(TABLECALL_APPS_SCRIPT_URL);
+      url.searchParams.set('page', 'order');
       url.searchParams.set('table', tableNumber);
       return url.toString();
     }
@@ -4826,13 +4853,12 @@
             table.callTime = normalized.createdAt;
           }
         });
+        const shouldNotify = posOrderSyncInitialized;
+        posOrderSyncInitialized = true;
         if (!rows.length && !newOrders.length) return;
         saveState(null, null, true);
         renderAllViews();
-        if (newOrders.length) {
-          playChimeSound('calling');
-          showToast(`🔔 ซิงก์ออเดอร์ใหม่ ${newOrders.length} รายการ`);
-        }
+        if (shouldNotify) newOrders.forEach(notifyIncomingPOSOrder);
       } catch (err) { console.error('Apps Script order poll failed', err); }
     }
 
