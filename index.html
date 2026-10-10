@@ -1108,13 +1108,13 @@
       display: flex;
     }
     .cust-header {
-      background: linear-gradient(135deg, #1e293b 0%, #312e81 100%);
+      background: #4338ca;
       color: #fff;
       padding: 16px 20px 20px;
       position: sticky;
       top: 0;
       z-index: 50;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      box-shadow: none;
     }
     .cust-header-top {
       display: flex;
@@ -1156,63 +1156,47 @@
       color: #312e81;
       border-color: #fff;
     }
-    .cust-body { flex: 1; padding: 16px; padding-bottom: 120px; }
-    .cust-menu-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .cust-item-card {
-      background: #fff;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
-      display: flex;
-      flex-direction: column;
-    }
-    .cust-item-emoji {
-      font-size: 44px;
-      text-align: center;
-      padding: 18px 8px 8px;
-      background: #f8fafc;
-    }
-    .cust-item-info { padding: 8px 10px 10px; flex: 1; }
-    .cust-item-name { font-size: 13.5px; font-weight: 700; color: #1e293b; line-height: 1.3; }
-    .cust-item-cat { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-    .cust-item-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 8px;
-    }
-    .cust-item-price { font-size: 15px; font-weight: 800; color: #4338ca; }
-    .cust-add-btn {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      border: none;
-      background: #4338ca;
-      color: #fff;
-      font-size: 20px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      line-height: 1;
-    }
-    .cust-add-btn:active { background: #3730a3; transform: scale(0.93); }
-    /* Floating Cart Bar */
+    .cust-subtitle { font-size:13px; margin-top:8px; opacity:.9; }
+    .cust-body { flex: 1; width: 100%; max-width: 790px; margin: 0 auto; padding: 18px 14px 110px; }
+    .cust-card { background:#fff; border:1px solid #e0e7f2; border-radius:16px; padding:16px 18px; margin-bottom:14px; }
+    .cust-section-title { font-size:17px; font-weight:800; margin-bottom:4px; }
+    .cust-empty { text-align:center; padding:24px; color:#64748b; }
+    .cust-menu-grid { display: block; }
+    .cust-menu-row { display:flex; align-items:center; gap:14px; padding:13px 2px; border-bottom:1px solid #edf0f5; }
+    .cust-menu-row:last-child { border-bottom:0; }
+    .cust-menu-info { flex:1; min-width:0; }
+    .cust-menu-name { font-size:15px; font-weight:750; color:#1e293b; line-height:1.35; }
+    .cust-menu-category { font-size:12px; color:#64748b; margin-top:3px; }
+    .cust-menu-price { font-size:15px; font-weight:800; color:#4338ca; margin-top:5px; }
+    .cust-qty { display:flex; align-items:center; gap:9px; }
+    .cust-qty button { border:0; background:#eef2ff; color:#3730a3; width:34px; height:34px; border-radius:10px; font-size:20px; font-weight:800; cursor:pointer; }
+    .cust-qty span { min-width:20px; text-align:center; font-weight:800; }
+    .cust-details-card { background:#fff; border:1px solid #e0e7f2; border-radius:16px; padding:16px; margin-top:14px; }
+    .cust-detail-label { display:block; font-size:13px; font-weight:750; margin:0 0 8px; }
+    .cust-detail-input { width:100%; padding:12px; border:1px solid #d9e1ef; border-radius:10px; font:inherit; color:#172033; }
+    .cust-note-label { margin-top:14px; }
+    .cust-call-feedback { display:none; padding:12px; border-radius:10px; margin:12px 0; background:#fef3c7; color:#92400e; font-size:13px; }
+    .cust-success-box { display:none; background:#d1fae5; border:1.5px solid #34d399; border-radius:14px; padding:18px; color:#065f46; margin:16px 0; }
+    .cust-success-meta { margin:6px 0 12px; }
+    .cust-success-items { border-top:1px solid #a7f3d0; border-bottom:1px solid #a7f3d0; padding:8px 0; }
+    .cust-success-items > div { display:flex; justify-content:space-between; gap:12px; padding:4px 0; }
+    .cust-success-box p { text-align:right; font-weight:800; margin:10px 0; }
+    /* Sticky order summary, matching the Apps Script customer page */
     .cust-cart-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: #1e293b;
-      color: #fff;
-      padding: 14px 20px;
+      background: #fff;
+      color: #172033;
+      padding: 12px max(14px,calc((100vw - 750px)/2));
       display: flex;
       align-items: center;
       justify-content: space-between;
       z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 -2px 12px rgba(15,23,42,0.08);
+      padding-bottom: max(12px,env(safe-area-inset-bottom));
     }
     .cust-cart-bar.hidden { display: none; }
-    .cust-cart-info { display: flex; align-items: center; gap: 12px; }
+    .cust-cart-info { display: flex; align-items: center; gap: 12px; flex-wrap:wrap; }
     .cust-cart-count {
       background: #4338ca;
       color: #fff;
@@ -1223,17 +1207,19 @@
     }
     .cust-cart-total { font-size: 17px; font-weight: 800; }
     .cust-order-btn {
-      background: #10b981;
+      background: #4338ca;
       border: none;
       color: #fff;
-      padding: 10px 22px;
+      padding: 12px 18px;
       border-radius: 12px;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       font-family: 'Sarabun', sans-serif;
     }
-    .cust-order-btn:active { background: #059669; }
+    .cust-order-btn:active { background: #3730a3; }
+    .cust-order-btn:disabled { opacity:.55; cursor:wait; }
+    @media (max-width:480px) { .cust-header { padding:14px 14px 16px; } .cust-menu-row { gap:8px; } .cust-qty { gap:6px; } .cust-qty button { width:32px;height:32px; } .cust-order-btn { padding:11px 13px;font-size:14px; } }
     /* Call staff buttons */
     .cust-actions {
       display: grid;
@@ -1338,82 +1324,31 @@
 
   <!-- ── CUSTOMER MOBILE ORDER PAGE (shown when scanning QR) ── -->
   <div id="customer-order-page">
-    <!-- Sticky Header -->
-    <div class="cust-header">
+    <header class="cust-header">
       <div class="cust-header-top">
-        <div>
-          <div class="cust-store-name" id="cust-store-name">🍽️ ร้านอาหาร</div>
-          <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">สแกนสั่งอาหาร / เรียกพนักงาน</div>
-        </div>
+        <div><div class="cust-store-name" id="cust-store-name">🍽️ ร้านอาหาร</div><div class="cust-subtitle">เลือกเมนูที่ต้องการ แล้วกดยืนยันออเดอร์</div></div>
         <div class="cust-table-badge" id="cust-table-badge">โต๊ะ —</div>
       </div>
-      <!-- Category filter pills -->
+    </header>
+    <main class="cust-body">
       <div class="cust-cat-scroll" id="cust-cat-scroll"></div>
-    </div>
-
-    <!-- Body -->
-    <div class="cust-body">
-      <!-- Quick action buttons -->
-      <div class="cust-actions">
-        <button class="cust-action-btn" style="background:#fffbeb; border-color:#fde68a; color:#b45309;"
-          onclick="custCallStaff('call_staff','เรียกพนักงาน')">
-          <span class="icon">🔔</span>
-          <span>เรียกพนักงาน</span>
-        </button>
-        <button class="cust-action-btn" style="background:#f0f9ff; border-color:#bae6fd; color:#0369a1;"
-          onclick="custCallStaff('request_bill','ขอเช็คบิล')">
-          <span class="icon">💳</span>
-          <span>ขอเช็คบิล</span>
-        </button>
-        <button class="cust-action-btn" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"
-          onclick="custCallStaff('call_staff','ขอเติมน้ำ 🧊')">
-          <span class="icon">🧊</span>
-          <span>ขอเติมน้ำ</span>
-        </button>
-        <button class="cust-action-btn" style="background:#fdf4ff; border-color:#e9d5ff; color:#7e22ce;"
-          onclick="custCallStaff('call_staff','ขอช้อนส้อม 🥢')">
-          <span class="icon">🥢</span>
-          <span>ขอช้อนส้อม</span>
-        </button>
+      <div class="cust-card">
+        <div class="cust-section-title">🍽️ เมนูอาหาร</div>
+        <div class="cust-menu-grid" id="cust-menu-grid"><div class="cust-empty">กำลังโหลดเมนูอาหาร...</div></div>
       </div>
-
-      <!-- Feedback box for call actions -->
-      <div id="cust-call-feedback" style="display:none; background:#fef9c3; border:1.5px solid #fde047; border-radius:12px; padding:12px 16px; font-size:13px; font-weight:700; color:#713f12; text-align:center; margin-bottom:16px;"></div>
-
-      <!-- Menu section title -->
-      <div style="font-size:15px; font-weight:800; color:#1e293b; margin-bottom:12px;">🍽️ เมนูอาหาร</div>
-      <div class="cust-menu-grid" id="cust-menu-grid"></div>
-    </div>
-
-    <!-- Floating Cart Bar -->
-    <div class="cust-cart-bar hidden" id="cust-cart-bar">
-      <div class="cust-cart-info">
-        <span class="cust-cart-count" id="cust-cart-count">0 รายการ</span>
-        <span class="cust-cart-total" id="cust-cart-total">฿0.00</span>
-      </div>
-      <button class="cust-order-btn" onclick="custOpenCart()">🛒 ดูรายการ / สั่งอาหาร</button>
-    </div>
-
-    <!-- Cart Review Sheet -->
-    <div class="cust-cart-modal" id="cust-cart-modal" onclick="custCloseCartIfOverlay(event)">
-      <div class="cust-cart-sheet">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <div style="font-size:17px; font-weight:800;">🛒 รายการที่เลือก</div>
-          <button onclick="custCloseCart()" style="border:none; background:#f1f5f9; border-radius:50%; width:30px; height:30px; font-size:16px; cursor:pointer;">✕</button>
-        </div>
-        <div id="cust-cart-items"></div>
-        <div id="cust-cart-summary" style="margin-top:14px; padding-top:14px; border-top:1.5px solid #f1f5f9; font-size:15px; font-weight:800; text-align:right;"></div>
-        <div id="cust-cart-note-area" style="margin-top:12px;">
-          <label for="cust-guest-count" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px;">จำนวนลูกค้าที่โต๊ะ</label>
-          <input id="cust-guest-count" type="number" min="1" max="50" value="1" inputmode="numeric"
-            style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;font-size:14px;margin-bottom:10px;">
-          <textarea id="cust-order-note" placeholder="หมายเหตุ เช่น ไม่เผ็ด, แพ้ถั่ว..." rows="2"
-            style="width:100%; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px; font-size:13px; font-family:'Sarabun',sans-serif; resize:none; outline:none;"></textarea>
-        </div>
-        <div id="cust-success-msg" class="cust-success-box">✅ ส่งออเดอร์เรียบร้อยแล้ว! พนักงานจะนำอาหารมาให้ที่โต๊ะ</div>
-        <button class="cust-confirm-btn" id="cust-send-order-btn" onclick="custSendOrder()">📨 ส่งออเดอร์</button>
-      </div>
-    </div>
+      <section class="cust-details-card" id="cust-details-card">
+        <label class="cust-detail-label" for="cust-guest-count">จำนวนลูกค้าที่โต๊ะนี้</label>
+        <input class="cust-detail-input" id="cust-guest-count" type="number" min="1" max="50" value="1" inputmode="numeric">
+        <label class="cust-detail-label cust-note-label" for="cust-order-note">หมายเหตุถึงครัว</label>
+        <textarea class="cust-detail-input" id="cust-order-note" rows="2" placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย"></textarea>
+      </section>
+      <div class="cust-call-feedback" id="cust-call-feedback" role="alert"></div>
+      <div class="cust-success-box" id="cust-success-msg"></div>
+    </main>
+    <footer class="cust-cart-bar" id="cust-cart-bar">
+      <div class="cust-cart-info"><span class="cust-cart-count" id="cust-cart-count">0 รายการ</span><span class="cust-cart-total" id="cust-cart-total">฿0</span></div>
+      <button class="cust-order-btn" id="cust-send-order-btn" onclick="custSendOrder()">ยืนยันสั่งอาหาร</button>
+    </footer>
   </div>
 
   <!-- ── 1. LEFT SIDEBAR (DARK NAVY) ── -->
@@ -3765,7 +3700,7 @@
       const container = document.getElementById('kds-tickets-container');
       container.innerHTML = '';
 
-      const kitchenOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking');
+      const kitchenOrders = orders.filter(o => ['open', 'pending', 'cooking'].includes(String(o.status || '').toLowerCase()));
       if (kitchenOrders.length === 0) {
         container.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted); background: white; border-radius: 12px; border: 1px solid var(--border-color);">🍳 ไม่มีคิวอาหารค้างในครัว</div>`;
         return;
@@ -3782,12 +3717,12 @@
         const isCooking = o.status === 'cooking';
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-weight: 800; font-size: 16px;">โต๊ะ ${o.tableNumber} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">(${o.id})</span></div>
+            <div style="font-weight: 800; font-size: 16px;">โต๊ะ ${o.tableNumber || 'ไม่ระบุ'} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">(${o.id})</span></div>
             <span class="status-badge" style="background: ${isCooking ? '#ffedd5' : '#fef3c7'}; color: ${isCooking ? '#c2410c' : '#b45309'};">
               ${isCooking ? '🍳 กำลังปรุง' : '⏳ รอคิว'}
             </span>
           </div>
-          <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">🕒 เวลาสั่ง: ${o.time}</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">🕒 เวลาสั่ง: ${o.time || o.createdAt || 'ไม่ระบุ'} · ${o.source === 'customer_link' || o.source === 'qr' ? 'สั่งจาก QR' : 'พนักงานรับออเดอร์'} · ${Number(o.guestCount) || 1} คน</div>
           <ul style="font-size: 13.5px; line-height: 1.8; padding-left: 18px; margin-bottom: 16px;">
             ${o.items.map(i => `<li><strong>${i.name}</strong> x${i.qty}</li>`).join('')}
           </ul>
@@ -4897,10 +4832,11 @@
             ...(index >= 0 ? orders[index] : {}), id: remote.id,
             tableId: table ? table.id : 'unknown', tableNumber: remote.table_number,
             items: remote.items || [], note: remote.note || '', total: Number(remote.total) || 0,
-            status: remote.status || 'open', source: remote.source || 'staff',
+            status: remote.status === 'open' ? 'pending' : (remote.status || 'pending'), source: remote.source || 'staff',
             guestCount: Number(remote.guest_count) || 1, created_at: remote.created_at,
             paid_at: remote.paid_at || '', payMethod: remote.payment_method || '',
-            createdAt: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH') : '',
+            createdAt: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : '',
+            time: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : '',
           };
           if (index >= 0) orders[index] = normalized;
           else orders.unshift(normalized);
@@ -5000,188 +4936,98 @@
       'เครื่องดื่ม': '🧃', 'หมูกระทะ-ชาบู': '🥩', 'ผัก/เห็ด': '🥦'
     };
 
+    const custEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const custMoney = value => '฿' + Number(value || 0).toLocaleString('th-TH');
     function launchCustomerOrderPage(tableNum) {
-      custTableNumber = tableNum;
+      custTableNumber = String(tableNum || '').trim();
       custCart = [];
-
-      // Hide staff UI, show customer page
       document.getElementById('sidebar').style.display = 'none';
       document.getElementById('main-wrapper').style.display = 'none';
       document.getElementById('customer-order-page').classList.add('active');
-
-      // Set store name & table badge
       document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
-      document.getElementById('cust-table-badge').textContent = tableNum ? `โต๊ะ ${tableNum}` : 'โต๊ะ —';
-      document.querySelector('.cust-header-top > div:first-child > div:nth-child(2)').textContent = 'เลือกเมนูและสั่งอาหารจากโต๊ะ';
-      document.getElementById('cust-cat-scroll').style.display = '';
-      document.getElementById('cust-menu-grid').style.display = 'grid';
-      document.getElementById('cust-cart-bar').style.display = '';
-      const menuTitle = document.getElementById('cust-menu-grid').previousElementSibling;
-      if (menuTitle) menuTitle.style.display = '';
-
-      // Build category pills
-      const cats = ['ทั้งหมด', ...new Set(menuItems.map(m => m.category))];
+      document.getElementById('cust-table-badge').textContent = custTableNumber ? `โต๊ะ ${custTableNumber}` : 'โต๊ะ —';
+      const table = tables.find(tb => String(tb.number) === custTableNumber);
+      const feedback = document.getElementById('cust-call-feedback');
+      if (!table || table.active === false) {
+        feedback.style.display = 'block';
+        feedback.textContent = 'ไม่พบโต๊ะนี้หรือโต๊ะถูกปิดใช้งาน กรุณาสแกน QR Code ใหม่';
+        document.getElementById('cust-send-order-btn').disabled = true;
+        document.getElementById('cust-menu-grid').innerHTML = '<div class="cust-empty">ไม่สามารถโหลดเมนูสำหรับโต๊ะนี้ได้</div>';
+        return;
+      }
+      document.getElementById('cust-guest-count').value = Math.max(1, Number(table.seats) || 1);
+      const cats = ['ทั้งหมด', ...new Set(menuItems.filter(m => m.available !== false).map(m => m.category).filter(Boolean))];
       const scroll = document.getElementById('cust-cat-scroll');
-      scroll.innerHTML = cats.map((c, i) =>
-        `<button class="cust-cat-pill${i === 0 ? ' active' : ''}" onclick="custFilterCat('${c}', this)">${c}</button>`
-      ).join('');
+      scroll.innerHTML = cats.map((category, index) => `<button class="cust-cat-pill${index === 0 ? ' active' : ''}" data-category="${custEscape(category)}" onclick="custFilterCat(this.dataset.category, this)">${custEscape(category)}</button>`).join('');
       custRenderMenu('ทั้งหมด');
+      custUpdateCartBar();
     }
-
     function custFilterCat(cat, btn) {
-      document.querySelectorAll('.cust-cat-pill').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.cust-cat-pill').forEach(pill => pill.classList.remove('active'));
       btn.classList.add('active');
       custRenderMenu(cat);
     }
-
     function custRenderMenu(cat) {
-      const availableItems = menuItems.filter(m => m.available !== false);
-      const items = cat === 'ทั้งหมด' ? availableItems : availableItems.filter(m => m.category === cat);
+      const items = menuItems.filter(item => item.available !== false && (cat === 'ทั้งหมด' || item.category === cat));
       const grid = document.getElementById('cust-menu-grid');
-      grid.innerHTML = items.map(m => {
-        const emoji = MENU_EMOJI[m.category] || '🍽️';
-        return `
-        <div class="cust-item-card">
-          <div class="cust-item-emoji">${emoji}</div>
-          <div class="cust-item-info">
-            <div class="cust-item-name">${m.name}</div>
-            <div class="cust-item-cat">${m.category}</div>
-            <div class="cust-item-footer">
-              <span class="cust-item-price">฿${m.price}</span>
-              <button class="cust-add-btn" onclick="custAddToCart('${m.id}')">+</button>
-            </div>
-          </div>
-        </div>`;
+      if (!items.length) { grid.innerHTML = '<div class="cust-empty">ไม่มีเมนูพร้อมจำหน่ายในขณะนี้</div>'; return; }
+      grid.innerHTML = items.map(item => {
+        const id = String(item.id);
+        const cartItem = custCart.find(entry => String(entry.id) === id);
+        const qty = cartItem ? cartItem.qty : 0;
+        return `<div class="cust-menu-row"><div class="cust-menu-info"><div class="cust-menu-name">${custEscape(item.name)}</div><div class="cust-menu-category">${custEscape(item.category)}</div><div class="cust-menu-price">${custMoney(item.price)}</div></div><div class="cust-qty"><button aria-label="ลด ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,-1)" data-id="${custEscape(id)}">−</button><span>${qty}</span><button aria-label="เพิ่ม ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,1)" data-id="${custEscape(id)}">+</button></div></div>`;
       }).join('');
     }
-
-    function custAddToCart(menuId) {
-      const item = menuItems.find(m => m.id === menuId);
-      if (!item) return;
-      const existing = custCart.find(c => c.id === menuId);
-      if (existing) {
-        existing.qty++;
-      } else {
-        custCart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
-      }
-      custUpdateCartBar();
-      // Brief visual feedback
-      showToast(`✅ เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
-    }
-
-    function custUpdateCartBar() {
-      const bar = document.getElementById('cust-cart-bar');
-      const total = custCart.reduce((s, c) => s + c.price * c.qty, 0);
-      const totalQty = custCart.reduce((s, c) => s + c.qty, 0);
-      if (custCart.length === 0) {
-        bar.classList.add('hidden');
-      } else {
-        bar.classList.remove('hidden');
-        document.getElementById('cust-cart-count').textContent = `${totalQty} รายการ`;
-        document.getElementById('cust-cart-total').textContent = `฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
-      }
-    }
-
-    function custOpenCart() {
-      const itemsEl = document.getElementById('cust-cart-items');
-      const summaryEl = document.getElementById('cust-cart-summary');
-      const successMsg = document.getElementById('cust-success-msg');
-      const sendBtn = document.getElementById('cust-send-order-btn');
-      successMsg.style.display = 'none';
-      sendBtn.style.display = '';
-      document.getElementById('cust-order-note').value = '';
-
-      if (custCart.length === 0) {
-        itemsEl.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">ยังไม่มีรายการในตะกร้า</div>';
-        summaryEl.innerHTML = '';
-      } else {
-        itemsEl.innerHTML = custCart.map(c => `
-          <div class="cust-cart-item">
-            <div>
-              <div style="font-weight:700; font-size:14px;">${c.name}</div>
-              <div style="font-size:12px; color:#64748b;">฿${c.price} / ชิ้น</div>
-            </div>
-            <div class="cust-qty-ctrl">
-              <button class="cust-qty-btn" onclick="custChangeQty('${c.id}', -1)">−</button>
-              <span style="font-weight:800; min-width:20px; text-align:center;">${c.qty}</span>
-              <button class="cust-qty-btn" onclick="custChangeQty('${c.id}', 1)">+</button>
-              <span style="font-weight:700; min-width:56px; text-align:right;">฿${(c.price * c.qty).toLocaleString('th-TH')}</span>
-            </div>
-          </div>
-        `).join('');
-        const total = custCart.reduce((s, c) => s + c.price * c.qty, 0);
-        summaryEl.innerHTML = `รวมทั้งสิ้น: ฿${total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
-      }
-
-      document.getElementById('cust-cart-modal').classList.add('open');
-    }
-
+    function custAddToCart(menuId) { custChangeQty(menuId, 1); }
     function custChangeQty(menuId, delta) {
-      const c = custCart.find(i => i.id === menuId);
-      if (!c) return;
-      c.qty += delta;
-      if (c.qty <= 0) custCart = custCart.filter(i => i.id !== menuId);
+      const item = menuItems.find(entry => String(entry.id) === String(menuId) && entry.available !== false);
+      if (!item) return;
+      const existing = custCart.find(entry => String(entry.id) === String(menuId));
+      if (existing) { existing.qty += delta; if (existing.qty <= 0) custCart = custCart.filter(entry => String(entry.id) !== String(menuId)); }
+      else if (delta > 0) custCart.push({ id: item.id, name: item.name, price: Number(item.price) || 0, qty: delta });
+      custRenderMenu(document.querySelector('.cust-cat-pill.active')?.dataset.category || 'ทั้งหมด');
       custUpdateCartBar();
-      custOpenCart();   // refresh cart sheet
     }
-
-    function custCloseCart() {
-      document.getElementById('cust-cart-modal').classList.remove('open');
+    function custUpdateCartBar() {
+      const total = custCart.reduce((sum, item) => sum + (Number(item.price) || 0) * item.qty, 0);
+      const count = custCart.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('cust-cart-count').textContent = `${count} รายการ`;
+      document.getElementById('cust-cart-total').textContent = custMoney(total);
+      const button = document.getElementById('cust-send-order-btn');
+      button.disabled = count === 0;
+      button.textContent = count ? 'ยืนยันสั่งอาหาร' : 'เลือกเมนูก่อนสั่ง';
     }
-
-    function custCloseCartIfOverlay(e) {
-      if (e.target === document.getElementById('cust-cart-modal')) custCloseCart();
-    }
-
-    function custSendOrder() {
-      if (custCart.length === 0) {
-        showToast('⚠️ กรุณาเลือกเมนูก่อนส่งออเดอร์');
-        return;
-      }
+    async function custSendOrder() {
+      const button = document.getElementById('cust-send-order-btn');
+      const feedback = document.getElementById('cust-call-feedback');
+      if (!custCart.length) { feedback.style.display = 'block'; feedback.textContent = 'เลือกเมนูอย่างน้อย 1 รายการก่อนยืนยัน'; return; }
       const note = document.getElementById('cust-order-note').value.trim();
       const guestCount = Math.max(1, Math.min(50, Number(document.getElementById('cust-guest-count').value) || 1));
-      const t = tables.find(tb => tb.number === custTableNumber);
-
-      // Build order object and push to POS orders
-      const orderId = 'ORD-' + Date.now();
-      const newOrder = {
-        id: orderId,
-        tableId: t ? t.id : 'unknown',
-        tableNumber: custTableNumber,
-        items: custCart.map(c => ({ ...c })),
-        note: note,
-        source: 'customer_link',
-        guestCount,
-        total: custCart.reduce((s, c) => s + c.price * c.qty, 0),
-        status: 'open',
-        createdAt: new Date().toLocaleTimeString('th-TH')
-      };
-      const finishOrder = () => {
-        orders.unshift(newOrder);
-        if (t) {
-          t.status = t.status === 'idle' ? 'calling' : t.status;
-          t.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
-          t.callTime = new Date().toLocaleTimeString('th-TH');
-        }
-        saveState('CALL', { table: custTableNumber, type: 'calling', note: 'ลูกค้าส่งออเดอร์จาก QR' });
+      const t = tables.find(tb => String(tb.number) === custTableNumber);
+      button.disabled = true; button.textContent = 'กำลังส่งออเดอร์...'; feedback.style.display = 'none';
+      try {
+        const saved = await tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: custCart.map(item => ({ menuId: String(item.id), qty: item.qty })), note, source: 'customer_link', guestCount } });
+        const normalized = { id: saved.id, tableId: t ? t.id : 'unknown', tableNumber: custTableNumber, items: saved.items || custCart.map(item => ({ ...item })), note: saved.note || note, source: 'customer_link', guestCount: Number(saved.guest_count) || guestCount, total: Number(saved.total) || 0, status: saved.status || 'pending', created_at: saved.created_at, createdAt: saved.created_at ? new Date(saved.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) };
+        if (!orders.some(order => String(order.id) === String(normalized.id))) orders.unshift(normalized);
+        if (t) { t.status = 'occupied'; t.callNote = 'ลูกค้าส่งออเดอร์จาก QR'; t.callTime = normalized.createdAt; }
+        // This customer page has no admin session. The order is already stored
+        // in Apps Script; update this browser's receipt cache without trying to
+        // push the full POS state through the admin-only endpoint.
+        saveState(null, null, true);
         playChimeSound('calling');
-        document.getElementById('cust-success-msg').style.display = 'block';
-        document.getElementById('cust-send-order-btn').style.display = 'none';
+        document.getElementById('cust-details-card').style.display = 'none';
+        document.getElementById('cust-menu-grid').parentElement.style.display = 'none';
+        document.getElementById('cust-cat-scroll').style.display = 'none';
+        const success = document.getElementById('cust-success-msg');
+        success.innerHTML = `<strong>✅ รับออเดอร์แล้ว</strong><div class="cust-success-meta">โต๊ะ ${custEscape(custTableNumber)} • เลขออเดอร์ ${custEscape(normalized.id)}</div><div class="cust-success-items">${normalized.items.map(item => `<div>${custEscape(item.name)} × ${Number(item.qty) || 0}<strong>${custMoney((Number(item.price) || 0) * (Number(item.qty) || 0))}</strong></div>`).join('')}</div><p>รวม ${custMoney(normalized.total)}</p><small>พนักงานได้รับรายการแล้ว ขอบคุณค่ะ</small>`;
+        success.style.display = 'block';
+        document.getElementById('cust-cart-bar').style.display = 'none';
         custCart = [];
-        custUpdateCartBar();
-      };
-
-      const submitButton = document.getElementById('cust-send-order-btn');
-      submitButton.disabled = true;
-      submitButton.textContent = 'กำลังส่งออเดอร์...';
-      tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: newOrder.items, note, total: newOrder.total, source: 'customer_link', guestCount } })
-        .then(saved => { newOrder.id = saved.id; finishOrder(); })
-        .catch(err => {
-          const feedback = document.getElementById('cust-call-feedback');
-          feedback.style.display = 'block';
-          feedback.textContent = `ส่งออเดอร์ไม่สำเร็จ: ${err.message}`;
-        })
-        .finally(() => { submitButton.disabled = false; submitButton.textContent = '📨 ส่งออเดอร์'; });
+      } catch (err) {
+        feedback.style.display = 'block';
+        feedback.textContent = `ส่งออเดอร์ไม่สำเร็จ: ${err.message || err}`;
+        button.disabled = false; button.textContent = 'ลองส่งอีกครั้ง';
+      }
     }
 
     function custCallStaff(type, note) {
