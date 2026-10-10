@@ -1009,6 +1009,11 @@
       display: flex;
     }
 
+    #admin-login-overlay { z-index: 10000; background: rgba(15,23,42,.78); }
+    .admin-login-card { max-width: 420px; padding: 30px; border: 1px solid #e2e8f0; }
+    .admin-login-icon { width: 54px; height: 54px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 18px; background: #eef2ff; font-size: 26px; }
+    #admin-login-error { min-height: 20px; color: #dc2626; font-size: 13px; margin: 8px 0; }
+
     .modal-box {
       background: #ffffff;
       border-radius: 16px;
@@ -2954,6 +2959,46 @@
     let lastPOSStateUpdatedAt = '';
     let posCloudSyncTimer = null;
     let posOrderSyncInitialized = false;
+    let tableCallAdminKey = '';
+
+    function openAdminLogin() {
+      const overlay = document.getElementById('admin-login-overlay');
+      const input = document.getElementById('admin-login-key');
+      const error = document.getElementById('admin-login-error');
+      overlay.classList.add('open');
+      document.getElementById('sidebar').style.visibility = 'hidden';
+      document.getElementById('main-wrapper').style.visibility = 'hidden';
+      input.value = '';
+      error.textContent = '';
+      input.focus();
+      return new Promise(resolve => { window.completeAdminLogin = resolve; });
+    }
+
+    async function submitAdminLogin(event) {
+      event.preventDefault();
+      const input = document.getElementById('admin-login-key');
+      const button = document.getElementById('admin-login-submit');
+      const error = document.getElementById('admin-login-error');
+      const key = input.value.trim();
+      if (!key) { error.textContent = 'กรุณากรอกรหัสผู้ดูแล'; input.focus(); return; }
+      button.disabled = true;
+      button.textContent = 'กำลังตรวจสอบ…';
+      error.textContent = '';
+      try {
+        await tableCallGas('checkAdminKey', { adminKey: key });
+        tableCallAdminKey = key;
+        document.getElementById('admin-login-overlay').classList.remove('open');
+        document.getElementById('sidebar').style.visibility = '';
+        document.getElementById('main-wrapper').style.visibility = '';
+        if (window.completeAdminLogin) window.completeAdminLogin(true);
+      } catch (err) {
+        error.textContent = /รหัสผู้ดูแล/.test(String(err.message)) ? 'รหัสไม่ถูกต้อง กรุณาลองใหม่' : explainAppsScriptError(err);
+        input.select();
+      } finally {
+        button.disabled = false;
+        button.textContent = 'เข้าสู่ระบบ';
+      }
+    }
 
     function currentSharedPOSState() {
       return { tables, menuItems, settings: storeSettings, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
@@ -2962,13 +3007,8 @@
     function tableCallGas(action, payload = {}, needsAdmin = false) {
       if (!TABLECALL_APPS_SCRIPT_URL) return Promise.reject(new Error('ยังไม่ได้ตั้งค่า Apps Script URL'));
       if (needsAdmin) {
-        let key = sessionStorage.getItem('tablecall_apps_script_admin_key');
-        if (!key) {
-          key = prompt('กรอกรหัสผู้ดูแล Apps Script (ADMIN_KEY)');
-          if (!key) return Promise.reject(new Error('ยกเลิกการทำรายการ'));
-          sessionStorage.setItem('tablecall_apps_script_admin_key', key);
-        }
-        payload = { ...payload, adminKey: key };
+        if (!tableCallAdminKey) return Promise.reject(new Error('กรุณาเข้าสู่ระบบผู้ดูแลใหม่'));
+        payload = { ...payload, adminKey: tableCallAdminKey };
       }
       const callbackName = `tableCall_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       return new Promise((resolve, reject) => {
@@ -2979,7 +3019,10 @@
           script.remove();
           if (error) return reject(error);
           if (result && result.error) {
-            if (String(result.error).includes('รหัสผู้ดูแล')) sessionStorage.removeItem('tablecall_apps_script_admin_key');
+            if (String(result.error).includes('รหัสผู้ดูแล')) {
+              tableCallAdminKey = '';
+              openAdminLogin();
+            }
             return reject(new Error(result.error));
           }
           resolve(result);
@@ -4873,6 +4916,11 @@
       const viewParam = params.get('view');
       const customerView = viewParam === 'customer' || !!tableParam;
 
+      if (!customerView) {
+        const loggedIn = await openAdminLogin();
+        if (!loggedIn) return;
+      }
+
       try {
         const remoteState = await tableCallGas('getPOSState');
         remotePOSAvailable = true;
@@ -5136,5 +5184,17 @@
         });
     }
   </script>
+  <div class="modal-overlay" id="admin-login-overlay">
+    <form class="modal-box admin-login-card" onsubmit="submitAdminLogin(event)">
+      <div class="admin-login-icon">🔐</div>
+      <h2 style="text-align:center;margin:0 0 6px;font-size:21px">เข้าสู่ระบบผู้ดูแล</h2>
+      <p style="text-align:center;color:#64748b;font-size:13px;margin:0 0 20px">กรอกรหัส ADMIN_KEY เพื่อเข้าใช้งานระบบจัดการร้าน</p>
+      <label for="admin-login-key" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">รหัสผู้ดูแล</label>
+      <input id="admin-login-key" class="form-input" type="password" autocomplete="current-password" placeholder="กรอกรหัส ADMIN_KEY" required>
+      <div id="admin-login-error" role="alert"></div>
+      <button id="admin-login-submit" class="btn-primary" type="submit" style="width:100%;padding:11px;border-radius:9px">เข้าสู่ระบบ</button>
+      <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:14px">เพื่อความปลอดภัย ระบบจะถามรหัสใหม่ทุกครั้งที่เปิดหน้า</div>
+    </form>
+  </div>
 </body>
 </html>
