@@ -1318,7 +1318,11 @@
       font-weight: 700;
       margin-top: 16px;
     }
+
+    /* Keep mobile controls hidden unless the mobile stylesheet enables them. */
+    #mobile-nav-toggle, #mobile-nav-backdrop { display: none; }
   </style>
+  <link rel="stylesheet" href="mobile.css" media="screen and (max-width: 1100px)">
 </head>
 <body>
 
@@ -1442,11 +1446,13 @@
       </a>
     </nav>
   </aside>
+  <div id="mobile-nav-backdrop" onclick="closeMobileNav()" aria-hidden="true"></div>
 
   <!-- ── 2. MAIN CONTENT WRAPPER ── -->
   <div id="main-wrapper">
     <!-- Top Bar -->
     <header id="top-bar">
+      <button id="mobile-nav-toggle" onclick="toggleMobileNav()" aria-label="เปิดเมนู" aria-expanded="false">☰</button>
       <div class="header-left">
         <div class="page-title" id="page-breadcrumb-title">โต๊ะอาหาร</div>
         <div class="page-date" id="top-current-date">29 พ.ค. 2569</div>
@@ -3350,6 +3356,24 @@
     }
 
     // ── 17. NAVIGATION ROUTER ──
+    function toggleMobileNav() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobile-nav-backdrop');
+      const button = document.getElementById('mobile-nav-toggle');
+      const open = sidebar.classList.toggle('mobile-open');
+      backdrop.classList.toggle('open', open);
+      button.setAttribute('aria-expanded', String(open));
+    }
+
+    function closeMobileNav() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobile-nav-backdrop');
+      const button = document.getElementById('mobile-nav-toggle');
+      if (sidebar) sidebar.classList.remove('mobile-open');
+      if (backdrop) backdrop.classList.remove('open');
+      if (button) button.setAttribute('aria-expanded', 'false');
+    }
+
     function switchNav(viewName) {
       if ((viewName === 'dashboard' || viewName === 'profit-loss') && !isStoreOwner()) {
         showToast('หน้านี้สำหรับเจ้าของร้านเท่านั้น');
@@ -3396,6 +3420,7 @@
       if (titleEl) titleEl.textContent = titleMap[viewName] || 'ร้านอาหารทดสอบ POS';
 
       renderSpecificView(viewName);
+      closeMobileNav();
     }
 
     function renderSpecificView(name) {
@@ -5272,6 +5297,7 @@
     function launchCustomerOrderPage(tableNum) {
       custTableNumber = String(tableNum || '').trim();
       custCart = [];
+      document.body.classList.add('customer-order-mode');
       document.getElementById('sidebar').style.display = 'none';
       document.getElementById('main-wrapper').style.display = 'none';
       document.getElementById('customer-order-page').classList.add('active');

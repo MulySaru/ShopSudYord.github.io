@@ -1,0 +1,87 @@
+/* Responsive layout for the staff/admin POS only.
+   Loaded only at tablet/mobile widths; the customer ordering page is intentionally excluded. */
+@media screen and (min-width: 761px) and (max-width: 1100px) {
+  #sidebar { width: 218px; min-width: 218px; }
+  #content-container { padding: 18px; }
+  #top-bar { height: auto; min-height: 64px; padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+  .header-right { gap: 7px; }
+  .btn-header-action, .btn-reset-db { padding: 7px 9px; font-size: 11.5px; }
+  .stats-bar { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; }
+  .stat-card { padding: 13px 14px; gap: 11px; }
+  .table-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  #content-container [style*="grid-template-columns: 2fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+@media screen and (max-width: 760px) {
+  body:not(.customer-order-mode) { display: block; min-height: 100dvh; }
+  body:not(.customer-order-mode) #sidebar {
+    position: fixed; inset: 0 auto 0 0; width: min(84vw, 300px); min-width: 0; height: 100dvh;
+    transform: translateX(-105%); transition: transform .22s ease; z-index: 1001; box-shadow: 12px 0 32px rgba(15,23,42,.2);
+  }
+  body:not(.customer-order-mode) #sidebar.mobile-open { transform: translateX(0); }
+  body:not(.customer-order-mode) #mobile-nav-backdrop.open {
+    display: block; position: fixed; inset: 0; z-index: 1000; background: rgba(15,23,42,.48);
+  }
+  body:not(.customer-order-mode) #main-wrapper { width: 100%; min-height: 100dvh; }
+  body:not(.customer-order-mode) #top-bar {
+    height: auto; min-height: 62px; position: sticky; top: 0; padding: 10px 12px 10px 54px;
+    align-items: flex-start; flex-wrap: wrap; gap: 8px; z-index: 900;
+  }
+  body:not(.customer-order-mode) #mobile-nav-toggle {
+    display: inline-flex; position: absolute; left: 10px; top: 11px; width: 38px; height: 38px;
+    border: 1px solid var(--border-color); border-radius: 10px; background: #fff; color: #334155;
+    align-items: center; justify-content: center; font-size: 20px; cursor: pointer;
+  }
+  body:not(.customer-order-mode) .header-left { flex: 1; min-width: 0; }
+  body:not(.customer-order-mode) .page-title { font-size: 16px; line-height: 1.25; }
+  body:not(.customer-order-mode) .page-date { font-size: 11px; }
+  body:not(.customer-order-mode) .header-right {
+    width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;
+  }
+  body:not(.customer-order-mode) .header-right button { min-height: 38px; justify-content: center; white-space: normal; font-size: 11px; padding: 6px 7px; }
+  body:not(.customer-order-mode) .header-right .user-profile { grid-column: 1 / -1; justify-self: end; }
+  body:not(.customer-order-mode) #content-container { padding: 12px; }
+  body:not(.customer-order-mode) .content-card { padding: 15px; border-radius: 12px; margin-bottom: 14px; }
+  body:not(.customer-order-mode) .card-header-flex { align-items: stretch; margin-bottom: 14px; }
+  body:not(.customer-order-mode) .card-header-flex > * { max-width: 100%; }
+  body:not(.customer-order-mode) .card-title { font-size: 16px; }
+  body:not(.customer-order-mode) .stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 14px; }
+  body:not(.customer-order-mode) .stat-card { min-width: 0; padding: 11px 10px; gap: 9px; border-radius: 12px; }
+  body:not(.customer-order-mode) .stat-icon { width: 38px; height: 38px; flex: 0 0 38px; font-size: 19px; }
+  body:not(.customer-order-mode) .stat-info { min-width: 0; }
+  body:not(.customer-order-mode) .stat-info h3 { font-size: 17px; overflow-wrap: anywhere; }
+  body:not(.customer-order-mode) .stat-info p { font-size: 10.5px; line-height: 1.3; }
+  body:not(.customer-order-mode) .zone-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin: 0 -2px 14px; scrollbar-width: thin; }
+  body:not(.customer-order-mode) .zone-pill { flex: 0 0 auto; min-height: 38px; }
+  body:not(.customer-order-mode) .table-grid { grid-template-columns: 1fr; gap: 10px; }
+  body:not(.customer-order-mode) .table-card { min-height: 160px; padding: 14px; }
+  body:not(.customer-order-mode) #content-container [style*="grid-template-columns"]:not(#dash-hourly-chart) { grid-template-columns: minmax(0, 1fr) !important; }
+  body:not(.customer-order-mode) #dash-hourly-chart { grid-template-columns: repeat(6, minmax(38px, 1fr)) !important; }
+  body:not(.customer-order-mode) #dash-hourly-chart > div { height: 118px !important; }
+  body:not(.customer-order-mode) #admin-login-overlay { align-items: center; }
+  body:not(.customer-order-mode) #dash-sales-period + input,
+  body:not(.customer-order-mode) #dash-sales-date,
+  body:not(.customer-order-mode) #dash-sales-month { max-width: 100%; }
+  body:not(.customer-order-mode) .data-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  body:not(.customer-order-mode) .data-table { min-width: 620px; }
+  body:not(.customer-order-mode) .modal-overlay { align-items: flex-end; padding: 8px; }
+  body:not(.customer-order-mode) .modal-box { width: 100%; max-width: 100%; max-height: min(92dvh, 900px); padding: 18px; border-radius: 16px 16px 10px 10px; overflow-y: auto; }
+  body:not(.customer-order-mode) .admin-login-card { max-width: 460px; margin: auto; }
+  body:not(.customer-order-mode) .form-input { min-height: 42px; font-size: 14px; }
+  body:not(.customer-order-mode) .btn-primary,
+  body:not(.customer-order-mode) .btn-success,
+  body:not(.customer-order-mode) .btn-tbl-action,
+  body:not(.customer-order-mode) .btn-header-action,
+  body:not(.customer-order-mode) .btn-reset-db { min-height: 40px; }
+  body:not(.customer-order-mode) #page-footer { padding: 13px 12px; font-size: 10px; line-height: 1.5; }
+  body:not(.customer-order-mode) #toast-container { left: 10px; right: 10px; bottom: 12px; }
+  body:not(.customer-order-mode) .toast-card { max-width: 100%; }
+}
+
+@media screen and (max-width: 390px) {
+  body:not(.customer-order-mode) #content-container { padding: 9px; }
+  body:not(.customer-order-mode) .content-card { padding: 12px; }
+  body:not(.customer-order-mode) .stat-card { align-items: flex-start; flex-direction: column; }
+  body:not(.customer-order-mode) .stat-info h3 { font-size: 16px; }
+  body:not(.customer-order-mode) #dash-hourly-chart { grid-template-columns: repeat(6, minmax(38px, 1fr)) !important; }
+}
