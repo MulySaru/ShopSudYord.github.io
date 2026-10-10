@@ -1599,24 +1599,25 @@
           <div class="card-header-flex">
             <div>
               <div class="card-title">📊 สินค้าขายดี</div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">29 พ.ค. 2569</div>
+              <div id="best-seller-period-label" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">คำนวณจากบิลที่ชำระแล้ว</div>
             </div>
           </div>
 
-          <!-- Date Filters matching screenshot -->
           <div class="filter-bar">
             <div class="filter-item">
               <span>ตั้งแต่</span>
-              <input type="text" class="filter-input" id="filter-start-date" value="05/01/2026">
+              <input type="date" class="filter-input" id="filter-start-date" onchange="renderBestSellersTable()">
             </div>
             <div class="filter-item">
               <span>ถึง</span>
-              <input type="text" class="filter-input" id="filter-end-date" value="05/29/2026">
+              <input type="date" class="filter-input" id="filter-end-date" onchange="renderBestSellersTable()">
             </div>
             <button class="btn-primary" style="padding: 7px 18px;" onclick="searchBestSellers()">
-              ค้นหา
+              🔍 คำนวณยอดขาย
             </button>
           </div>
+
+          <div id="best-sellers-summary" class="stats-bar" style="margin:0 0 18px;"></div>
 
           <div class="data-table-container">
             <table class="data-table" id="best-sellers-table">
@@ -1625,8 +1626,9 @@
                   <th>#</th>
                   <th>เมนู</th>
                   <th>หมวด</th>
-                  <th>ขาย</th>
-                  <th>ราคาเฉลี่ย</th>
+                  <th>จำนวนที่ขาย</th>
+                  <th>จำนวนบิลที่สั่ง</th>
+                  <th>ราคาเฉลี่ย/จาน</th>
                   <th>ยอดรวม</th>
                 </tr>
               </thead>
@@ -1898,6 +1900,7 @@
             <div class="card-title">👤 บุคลากร & พนักงาน</div>
             <button class="btn-primary" id="staff-add-button" data-owner-only="true" onclick="openAddStaffModal()">➕ เพิ่มพนักงาน</button>
           </div>
+          <div id="staff-page-summary" style="margin:-8px 0 14px;color:var(--text-muted);font-size:13px;">เจ้าของร้านดูแลบัญชีและรายชื่อพนักงาน</div>
           <div id="staff-sync-status" role="status" style="margin:0 0 14px;color:var(--text-muted);font-size:13px"></div>
           <div class="table-grid" id="staff-grid">
             <!-- Rendered dynamically -->
@@ -4375,30 +4378,84 @@
     // 18.7 BEST SELLERS (IMAGE 4)
     function renderBestSellersTable() {
       const tbody = document.getElementById('best-sellers-tbody');
-      tbody.innerHTML = '';
+      const startInput = document.getElementById('filter-start-date');
+      const endInput = document.getElementById('filter-end-date');
+      if (!startInput.value || !endInput.value) {
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        if (!startInput.value) startInput.value = `${today.slice(0, 8)}01`;
+        if (!endInput.value) endInput.value = today;
+      }
 
-      // Compute from live sales if available, else show items
-      let itemsToShow = SAMPLE_BEST_SELLERS;
+      const start = startInput.value;
+      const end = endInput.value;
+      const periodLabel = document.getElementById('best-seller-period-label');
+      const summary = document.getElementById('best-sellers-summary');
+      const formatDate = value => value ? new Date(`${value}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+      if (start > end) {
+        periodLabel.textContent = 'วันที่เริ่มต้นต้องไม่อยู่หลังวันที่สิ้นสุด';
+        summary.innerHTML = '';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:24px">กรุณาตรวจสอบช่วงวันที่</td></tr>';
+        return;
+      }
+      periodLabel.textContent = `สรุป ${formatDate(start)} – ${formatDate(end)} · นับเฉพาะบิลที่ชำระแล้ว`;
 
-      itemsToShow.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="font-weight: 700; color: #64748b;">${item.rank}</td>
-          <td style="font-weight: 600;">${item.name}</td>
-          <td style="color: #64748b;">${item.category}</td>
-          <td style="font-weight: 700;">${item.sold}</td>
-          <td style="color: #334155;">${item.avgPrice}</td>
-          <td style="font-weight: 700;">${item.total}</td>
-        `;
-        tbody.appendChild(tr);
+      const paidOrders = orders.filter(order => {
+        if (String(order.status || '').toLowerCase() !== 'paid') return false;
+        const date = dashboardOrderDate(order);
+        if (!date) return false;
+        const key = dashboardDateKey(date);
+        return key >= start && key <= end;
       });
+      const menuById = new Map(menuItems.map(item => [String(item.id), item]));
+      const menuByName = new Map(menuItems.map(item => [String(item.name || '').trim().toLocaleLowerCase(), item]));
+      const aggregate = new Map();
+      paidOrders.forEach((order, orderIndex) => {
+        (Array.isArray(order.items) ? order.items : []).forEach(line => {
+          const menuId = line.menuId ?? line.menu_id ?? line.id;
+          const menu = (menuId != null && menuById.get(String(menuId))) || menuByName.get(String(line.name || line.menu_name || '').trim().toLocaleLowerCase());
+          const name = String(line.name || line.menu_name || (menu && menu.name) || '').trim();
+          const qty = Math.max(0, Number(line.qty ?? line.quantity) || 0);
+          if (!name || !qty) return;
+          const key = menu ? `id:${menu.id}` : `name:${name.toLocaleLowerCase()}`;
+          const priceValue = line.price ?? line.unit_price ?? (menu && menu.price) ?? 0;
+          const amountValue = line.line_total ?? line.subtotal ?? line.amount;
+          const revenue = amountValue != null && amountValue !== '' ? Number(amountValue) || 0 : (Number(priceValue) || 0) * qty;
+          if (!aggregate.has(key)) aggregate.set(key, { name, category: String((menu && menu.category) || line.category || '—'), sold: 0, revenue: 0, orderIds: new Set() });
+          const item = aggregate.get(key);
+          item.sold += qty;
+          item.revenue += revenue;
+          item.orderIds.add(String(order.id || `row_${orderIndex}`));
+        });
+      });
+      const rows = [...aggregate.values()].sort((a, b) => b.sold - a.sold || b.revenue - a.revenue);
+      const totalUnits = rows.reduce((sum, item) => sum + item.sold, 0);
+      const totalRevenue = rows.reduce((sum, item) => sum + item.revenue, 0);
+      const money = amount => `฿${Number(amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      summary.innerHTML = `<div class="stat-card"><div class="stat-icon" style="background:#eef2ff;color:#4f46e5">🧾</div><div class="stat-info"><h3>${paidOrders.length.toLocaleString('th-TH')}</h3><p>บิลที่ชำระแล้ว</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#ecfdf5;color:#059669">🍽️</div><div class="stat-info"><h3>${totalUnits.toLocaleString('th-TH')}</h3><p>จำนวนจาน/ชิ้นที่ขาย</p></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fffbeb;color:#d97706">💰</div><div class="stat-info"><h3>${money(totalRevenue)}</h3><p>ยอดขายจากรายการอาหาร</p></div></div>`;
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:28px">ยังไม่มีรายการอาหารจากบิลที่ชำระแล้วในช่วงวันที่นี้</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((item, index) => `<tr>
+        <td style="font-weight:700;color:#64748b">${index === 0 ? '🏆' : index + 1}</td>
+        <td style="font-weight:700">${custEscape(item.name)}</td>
+        <td style="color:#64748b">${custEscape(item.category)}</td>
+        <td style="font-weight:700">${item.sold.toLocaleString('th-TH')} จาน</td>
+        <td>${item.orderIds.size.toLocaleString('th-TH')} บิล</td>
+        <td style="color:#334155">${money(item.sold ? item.revenue / item.sold : 0)}</td>
+        <td style="font-weight:700">${money(item.revenue)}</td>
+      </tr>`).join('');
     }
 
     function searchBestSellers() {
       const start = document.getElementById('filter-start-date').value;
       const end = document.getElementById('filter-end-date').value;
-      showToast(`🔍 ค้นหายอดขายช่วง ${start} ถึง ${end} สำเร็จ`);
       renderBestSellersTable();
+      if (start && end && start <= end) showToast(`📊 คำนวณสินค้าขายดีช่วง ${start} ถึง ${end} จากบิลที่ชำระแล้ว`);
     }
 
     // 18.8 MENU MANAGEMENT
@@ -4799,22 +4856,45 @@
 
     function renderStaff() {
       const grid = document.getElementById('staff-grid');
-      const isOwner = tableCallUser && tableCallUser.role === 'owner';
-      if (!employeeRecords.length) { grid.innerHTML = '<div style="padding:20px;color:var(--text-muted)">ยังไม่มีข้อมูลพนักงาน</div>'; return; }
+      const isOwner = Boolean(tableCallUser && tableCallUser.role === 'owner');
+      const ownId = tableCallUser && String(tableCallUser.employee_id);
+      const visibleEmployees = isOwner ? employeeRecords : employeeRecords.filter(employee => String(employee.employee_id) === ownId);
+      const pageSummary = document.getElementById('staff-page-summary');
+      if (pageSummary) pageSummary.textContent = isOwner
+        ? `จัดการบัญชีพนักงานทั้งหมด · ${employeeRecords.length} บัญชี`
+        : 'บัญชีของฉัน · แสดงข้อมูลและลงเวลาได้เฉพาะบัญชีที่เข้าสู่ระบบ';
+      if (!visibleEmployees.length) {
+        grid.innerHTML = `<div style="padding:20px;color:var(--text-muted)">${isOwner ? 'ยังไม่มีข้อมูลพนักงาน' : 'ไม่พบบัญชีพนักงานที่เข้าสู่ระบบ กรุณาออกจากระบบแล้วลองใหม่'}</div>`;
+        return;
+      }
       const now = new Date();
       const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      grid.innerHTML = employeeRecords.map(employee => {
-        const ownAccount = tableCallUser && String(tableCallUser.employee_id) === String(employee.employee_id);
+      grid.innerHTML = visibleEmployees.map(employee => {
+        const ownAccount = Boolean(tableCallUser && String(tableCallUser.employee_id) === String(employee.employee_id));
         const shift = attendanceRows.find(row => String(row.employee_id) === String(employee.employee_id) && String(row.work_date).slice(0, 10) === todayKey && !row.clock_out);
         const employmentType = employee.employment_type === 'part_time' ? 'พาร์ทไทม์' : employee.employment_type === 'full_time' ? 'ประจำ' : '';
-        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.position || 'พนักงาน')}${employmentType ? ` • ${employmentType}` : ''}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
+        return `<article class="table-card staff-account-card" style="min-height:0;gap:14px;cursor:default">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0">
+            <div style="width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:15px;background:${employee.role === 'owner' ? '#fef3c7' : '#eef2ff'};font-size:25px">${employee.role === 'owner' ? '👑' : '👤'}</div>
+            <div style="min-width:0;flex:1"><h4 style="font-size:16px;font-weight:800;overflow-wrap:anywhere">${custEscape(employee.name)}${ownAccount ? ' <span style="font-size:11px;color:#4f46e5;font-weight:600">· บัญชีนี้</span>' : ''}</h4><div style="font-size:13px;color:var(--text-muted);margin-top:3px">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.position || 'พนักงาน')}${employmentType ? ` · ${employmentType}` : ''}</div></div>
+          </div>
+          <div style="padding:10px 12px;border-radius:10px;background:${shift ? '#ecfdf5' : '#f8fafc'};font-size:13px;color:${shift ? '#047857' : 'var(--text-muted)'}">
+            ${shift ? `🟢 กำลังทำงาน · เข้างาน ${custEscape(shift.clock_in)}` : '⚪ ยังไม่ได้ลงเวลาเข้างานวันนี้'}
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${ownAccount ? `<button class="btn-primary" style="flex:1;min-height:44px;justify-content:center" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : ''}
+            ${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444;min-width:44px;min-height:44px" aria-label="ปิดใช้งานพนักงาน" title="ปิดใช้งานบัญชีพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}
+          </div>
+        </article>`;
       }).join('');
     }
 
     function renderAttendance() {
       const tbody = document.getElementById('attendance-tbody');
-      if (!attendanceRows.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px">ยังไม่มีประวัติการลงเวลา</td></tr>'; return; }
-      tbody.innerHTML = attendanceRows.map(record => `<tr><td style="font-weight:700">${custEscape(record.employee_name)}</td><td>${custEscape(record.work_date)}</td><td style="font-weight:700;color:#059669">${custEscape(record.clock_in)}</td><td style="color:var(--text-muted)">${custEscape(record.clock_out || '—')}</td><td><span class="status-badge ${record.clock_out ? 'status-calling' : 'status-available'}">${custEscape(record.status)}</span></td></tr>`).join('');
+      const isOwner = Boolean(tableCallUser && tableCallUser.role === 'owner');
+      const visibleRecords = isOwner ? attendanceRows : attendanceRows.filter(record => String(record.employee_id) === String(tableCallUser && tableCallUser.employee_id));
+      if (!visibleRecords.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px">${isOwner ? 'ยังไม่มีประวัติการลงเวลา' : 'ยังไม่มีประวัติลงเวลาของบัญชีนี้'}</td></tr>`; return; }
+      tbody.innerHTML = visibleRecords.map(record => `<tr><td style="font-weight:700">${custEscape(record.employee_name)}</td><td>${custEscape(record.work_date)}</td><td style="font-weight:700;color:#059669">${custEscape(record.clock_in)}</td><td style="color:var(--text-muted)">${custEscape(record.clock_out || '—')}</td><td><span class="status-badge ${record.clock_out ? 'status-calling' : 'status-available'}">${custEscape(record.status)}</span></td></tr>`).join('');
     }
 
     function openAddStaffModal() {

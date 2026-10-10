@@ -76,6 +76,15 @@
   body:not(.customer-order-mode) #page-footer { padding: 13px 12px; font-size: 10px; line-height: 1.5; }
   body:not(.customer-order-mode) #toast-container { left: 10px; right: 10px; bottom: 12px; }
   body:not(.customer-order-mode) .toast-card { max-width: 100%; }
+  body:not(.customer-order-mode) .filter-bar { align-items: stretch; gap: 8px; padding: 10px; }
+  body:not(.customer-order-mode) .filter-item { flex: 1 1 100%; justify-content: space-between; }
+  body:not(.customer-order-mode) .filter-input { width: 68%; min-height: 42px; }
+  body:not(.customer-order-mode) .filter-bar > .btn-primary { width: 100%; justify-content: center; min-height: 44px; }
+  body:not(.customer-order-mode) #best-sellers-summary .stat-card:last-child { grid-column: 1 / -1; }
+  body:not(.customer-order-mode) #best-sellers-table { min-width: 760px; }
+  body:not(.customer-order-mode) .staff-account-card { gap: 12px !important; }
+  body:not(.customer-order-mode) .staff-account-card .btn-primary { width: 100%; }
+  body:not(.customer-order-mode) .staff-account-card .action-icon-btn { width: 44px; flex: 0 0 44px; }
 }
 
 @media screen and (max-width: 390px) {
