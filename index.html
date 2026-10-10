@@ -2563,7 +2563,7 @@
       </div>
       <div class="form-group">
         <label>ชื่อเมนู</label>
-        <input type="text" id="menu-name-input" class="form-input" placeholder="เช่น ข้าวกะเพราหมูกรอบ">
+        <input type="text" id="menu-name-input" class="form-input" placeholder="เช่น ข้าวกะเพราหมูกรอบ" oninput="maybeSeedMenuAddons()">
       </div>
       <div class="form-group">
         <label>หมวดหมู่</label>
@@ -3266,6 +3266,7 @@
     let menuCategories = reconcileMenuCategories(JSON.parse(localStorage.getItem('pos_categories') || 'null') || [...DEFAULT_MENU_CATEGORIES], menuItems);
     let menuModalNoodleOptions = [];
     let menuModalAddons = [];
+    let menuModalAddonsTouched = false;
     let editingMenuId = null;
 
     // Broadcast Channel for Live Multi-tab Synchronisation
@@ -4636,6 +4637,32 @@
       return /ก๋วยเตี๋ยว|เส้น/.test(String(menu && menu.category || ''));
     }
 
+    function usesRiceToppings(menu) {
+      const name = String(menu && menu.name || '');
+      const category = String(menu && menu.category || '');
+      if (/ก๋วยเตี๋ยว|เส้น|หมูกระทะ|ชาบู/.test(`${category} ${name}`)) return false;
+      return /อาหารจานเดียว/.test(category) && /ข้าว/.test(name);
+    }
+
+    function defaultRiceToppings() {
+      return [
+        { id: 'addon_fried_egg', name: 'ไข่ดาว', price: 10, available: true },
+        { id: 'addon_omelet', name: 'ไข่เจียว', price: 15, available: true },
+        { id: 'addon_extra', name: 'พิเศษ', price: 10, available: true }
+      ];
+    }
+
+    function maybeSeedMenuAddons() {
+      if (editingMenuId || menuModalAddonsTouched || menuModalAddons.length) return;
+      const menu = {
+        name: document.getElementById('menu-name-input').value,
+        category: document.getElementById('menu-category-select').value
+      };
+      if (!usesRiceToppings(menu)) return;
+      menuModalAddons = defaultRiceToppings();
+      renderMenuAddons();
+    }
+
     function availableNoodleOptions(menu) {
       return (Array.isArray(menu && menu.noodleOptions) ? menu.noodleOptions : []).filter(option => option && option.available !== false);
     }
@@ -4736,6 +4763,7 @@
       document.getElementById('menu-noodle-option-input').value = '';
       menuModalNoodleOptions = [];
       menuModalAddons = [];
+      menuModalAddonsTouched = false;
       document.getElementById('menu-addon-name-input').value = '';
       document.getElementById('menu-addon-price-input').value = '10';
       renderMenuAddons();
@@ -4758,6 +4786,7 @@
       document.getElementById('menu-noodle-option-input').value = '';
       menuModalNoodleOptions = JSON.parse(JSON.stringify(menu.noodleOptions || (isNoodleMenu(menu) ? DEFAULT_NOODLE_OPTIONS : [])));
       menuModalAddons = JSON.parse(JSON.stringify(menu.addons || []));
+      menuModalAddonsTouched = true;
       document.getElementById('menu-addon-name-input').value = '';
       document.getElementById('menu-addon-price-input').value = '10';
       renderMenuAddons();
@@ -4771,6 +4800,7 @@
       editor.style.display = isNoodle ? 'block' : 'none';
       if (isNoodle && !editingMenuId && !menuModalNoodleOptions.length) menuModalNoodleOptions = DEFAULT_NOODLE_OPTIONS.map(option => ({ ...option }));
       renderMenuNoodleOptions();
+      maybeSeedMenuAddons();
     }
 
     function renderMenuNoodleOptions() {
@@ -4838,6 +4868,7 @@
       if (!addonName) { nameInput.focus(); return; }
       if (!Number.isFinite(addonPrice) || addonPrice < 0) return showToast('กรุณาใส่ราคาท็อปปิ้งตั้งแต่ 0 บาทขึ้นไป');
       if (menuModalAddons.some(addon => addon.name.toLocaleLowerCase() === addonName.toLocaleLowerCase())) return showToast('มีท็อปปิ้งนี้ในเมนูแล้ว');
+      menuModalAddonsTouched = true;
       menuModalAddons.push({ id: `addon_${Date.now()}_${menuModalAddons.length}`, name: addonName, price: addonPrice, available: true });
       nameInput.value = '';
       if (price !== undefined) priceInput.value = '10';
@@ -4850,6 +4881,7 @@
 
     function toggleMenuAddon(index) {
       if (!menuModalAddons[index]) return;
+      menuModalAddonsTouched = true;
       menuModalAddons[index].available = menuModalAddons[index].available === false;
       renderMenuAddons();
     }
@@ -4865,6 +4897,7 @@
       const price = Number(priceText);
       if (!Number.isFinite(price) || price < 0) return showToast('กรุณาใส่ราคาตั้งแต่ 0 บาทขึ้นไป');
       if (menuModalAddons.some((other, at) => at !== index && other.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase())) return showToast('มีท็อปปิ้งชื่อนี้แล้ว');
+      menuModalAddonsTouched = true;
       addon.name = name.trim(); addon.price = price;
       renderMenuAddons();
     }
@@ -4872,6 +4905,7 @@
     function deleteMenuAddon(index) {
       const addon = menuModalAddons[index];
       if (!addon || !confirm(`ลบท็อปปิ้ง “${addon.name}” ใช่หรือไม่?`)) return;
+      menuModalAddonsTouched = true;
       menuModalAddons.splice(index, 1);
       renderMenuAddons();
     }
@@ -4899,6 +4933,7 @@
         price: price,
         available: editingMenuId ? (menuItems.find(menu => String(menu.id) === editingMenuId)?.available !== false) : true,
         addons: menuModalAddons.map(addon => ({ ...addon })),
+        addonsConfigured: true,
         ...(isNoodleMenu({ category: cat }) ? { noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })) } : {})
       };
       const next = editingMenuId ? menuItems.map(menu => String(menu.id) === editingMenuId ? item : menu) : [...menuItems, item];
