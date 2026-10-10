@@ -119,22 +119,38 @@
   }
   body:not(.customer-order-mode) #main-wrapper { width: 100%; min-height: 100dvh; }
   body:not(.customer-order-mode) #top-bar {
-    height: auto; min-height: 62px; position: sticky; top: 0; padding: 10px 12px 10px 54px;
-    align-items: flex-start; flex-wrap: wrap; gap: 8px; z-index: 900;
+    height: auto; min-height: 62px; position: sticky; top: 0; padding: 10px 12px 11px 54px;
+    align-items: center; flex-wrap: wrap; gap: 9px 8px; z-index: 900;
+    background: #fff; border-bottom: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(15,23,42,.05);
   }
   body:not(.customer-order-mode) #mobile-nav-toggle {
     display: inline-flex; position: absolute; left: 10px; top: 11px; width: 38px; height: 38px;
     border: 1px solid var(--border-color); border-radius: 10px; background: #fff; color: #334155;
     align-items: center; justify-content: center; font-size: 20px; cursor: pointer;
   }
-  body:not(.customer-order-mode) .header-left { flex: 1; min-width: 0; }
-  body:not(.customer-order-mode) .page-title { font-size: 16px; line-height: 1.25; }
-  body:not(.customer-order-mode) .page-date { font-size: 11px; }
+  body:not(.customer-order-mode) .header-left { flex: 1 1 100%; min-width: 0; }
+  body:not(.customer-order-mode) .page-title { overflow: hidden; font-size: 16px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+  body:not(.customer-order-mode) .page-date { margin-top: 2px; font-size: 11px; }
   body:not(.customer-order-mode) .header-right {
     width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;
   }
-  body:not(.customer-order-mode) .header-right button { min-height: 38px; justify-content: center; white-space: normal; font-size: 11px; padding: 6px 7px; }
-  body:not(.customer-order-mode) .header-right .user-profile { grid-column: 1 / -1; justify-self: end; }
+  body:not(.customer-order-mode) .header-right > button:not(.notif-bell-btn) {
+    width: 100%; min-width: 0; min-height: 42px; justify-content: center; white-space: normal;
+    font-size: 11px; line-height: 1.25; padding: 6px 7px; text-align: center;
+  }
+  body:not(.customer-order-mode) .header-right .notif-bell-btn {
+    grid-column: 1; grid-row: 3; justify-self: start; align-self: center; display: inline-flex;
+    width: 46px; height: 42px; align-items: center; justify-content: center; border: 1px solid #e2e8f0;
+    border-radius: 11px; background: #fff; font-size: 19px;
+  }
+  body:not(.customer-order-mode) .header-right .user-profile {
+    grid-column: 2; grid-row: 3; justify-self: stretch; align-self: center; justify-content: flex-end;
+    min-width: 0; min-height: 42px; gap: 8px; padding: 2px 4px;
+  }
+  body:not(.customer-order-mode) .header-right .avatar-circle { width: 36px; height: 36px; flex: 0 0 36px; }
+  body:not(.customer-order-mode) .header-right .user-info { min-width: 0; text-align: right; }
+  body:not(.customer-order-mode) .header-right .user-name,
+  body:not(.customer-order-mode) .header-right .user-role { overflow: hidden; max-width: 120px; text-overflow: ellipsis; white-space: nowrap; }
   body:not(.customer-order-mode) #content-container { padding: 12px; }
   body:not(.customer-order-mode) .content-card { padding: 15px; border-radius: 12px; margin-bottom: 14px; }
   body:not(.customer-order-mode) .card-header-flex { align-items: stretch; margin-bottom: 14px; }
