@@ -2951,6 +2951,12 @@
     const TABLECALL_IS_CUSTOMER = new URLSearchParams(window.location.search).get('view') === 'customer' || new URLSearchParams(window.location.search).has('table');
     let remotePOSAvailable = false;
     let posStateSaveTimer = null;
+    let lastPOSStateUpdatedAt = '';
+    let posCloudSyncTimer = null;
+
+    function currentSharedPOSState() {
+      return { tables, menuItems, settings: storeSettings, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
+    }
 
     function tableCallGas(action, payload = {}, needsAdmin = false) {
       if (!TABLECALL_APPS_SCRIPT_URL) return Promise.reject(new Error('ยังไม่ได้ตั้งค่า Apps Script URL'));
@@ -2979,7 +2985,7 @@
         };
         const timer = setTimeout(() => finish(new Error('Apps Script ไม่ตอบกลับภายในเวลาที่กำหนด')), 20000);
         window[callbackName] = result => finish(null, result);
-        script.onerror = () => finish(new Error('เชื่อมต่อ Apps Script ไม่ได้ ตรวจสอบการ Deploy เป็น Web app และสิทธิ์ Anyone'));
+        script.onerror = () => finish(new Error('เบราว์เซอร์เปิด Apps Script ไม่ได้ ตรวจสอบว่าใช้ Web app URL ชุดเดียวกัน และ Deploy เป็น Execute as: Me / Who has access: Anyone'));
         const encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify({ action, ...payload })))).replace(/\+/g, '-').replace(/\//g, '_');
         const params = new URLSearchParams({ payload: encodedPayload, encoding: 'base64', callback: callbackName, _: String(Date.now()) });
         script.src = `${TABLECALL_APPS_SCRIPT_URL}?${params.toString()}`;
@@ -3001,9 +3007,15 @@
     function schedulePOSStateSave() {
       if (TABLECALL_IS_CUSTOMER || !TABLECALL_APPS_SCRIPT_URL) return;
       clearTimeout(posStateSaveTimer);
-      posStateSaveTimer = setTimeout(() => {
-        tableCallGas('savePOSState', { state: { tables, menuItems, settings: storeSettings } }, true)
-          .catch(err => showToast(`⚠️ ซิงก์เมนูไม่สำเร็จ: ${explainAppsScriptError(err)}`));
+      posStateSaveTimer = setTimeout(async () => {
+        try {
+          const result = await tableCallGas('savePOSState', { state: currentSharedPOSState() }, true);
+          if (result && result.updated_at) lastPOSStateUpdatedAt = result.updated_at;
+        } catch (err) {
+          showToast(`⚠️ ซิงก์เมนูไม่สำเร็จ: ${explainAppsScriptError(err)}`);
+        } finally {
+          posStateSaveTimer = null;
+        }
       }, 700);
     }
 
@@ -4737,10 +4749,54 @@
       if (!state) return;
       if (Array.isArray(state.tables)) tables = state.tables;
       if (Array.isArray(state.menuItems)) menuItems = state.menuItems;
+      if (Array.isArray(state.members)) members = state.members;
+      if (Array.isArray(state.promotions)) promotions = state.promotions;
+      if (Array.isArray(state.stockList)) stockList = state.stockList;
+      if (Array.isArray(state.expensesList)) expensesList = state.expensesList;
+      if (Array.isArray(state.suppliersList)) suppliersList = state.suppliersList;
+      if (Array.isArray(state.poList)) poList = state.poList;
+      if (Array.isArray(state.staffList)) staffList = state.staffList;
+      if (Array.isArray(state.attendanceList)) attendanceList = state.attendanceList;
       if (state.settings && typeof state.settings === 'object') storeSettings = { ...storeSettings, ...state.settings };
+      if (state.updated_at) lastPOSStateUpdatedAt = state.updated_at;
       localStorage.setItem('pos_tables', JSON.stringify(tables));
       localStorage.setItem('pos_menu', JSON.stringify(menuItems));
       localStorage.setItem('pos_settings', JSON.stringify(storeSettings));
+      localStorage.setItem('pos_members', JSON.stringify(members));
+      localStorage.setItem('pos_promotions', JSON.stringify(promotions));
+      localStorage.setItem('pos_stock', JSON.stringify(stockList));
+      localStorage.setItem('pos_expenses', JSON.stringify(expensesList));
+      localStorage.setItem('pos_suppliers', JSON.stringify(suppliersList));
+      localStorage.setItem('pos_po', JSON.stringify(poList));
+      localStorage.setItem('pos_staff', JSON.stringify(staffList));
+      localStorage.setItem('pos_attendance', JSON.stringify(attendanceList));
+    }
+
+    async function reconnectAndSyncPOS() {
+      if (TABLECALL_IS_CUSTOMER) return;
+      try {
+        if (!remotePOSAvailable) {
+          const state = await tableCallGas('getPOSState');
+          remotePOSAvailable = true;
+          if (state) applyPOSState(state);
+          else {
+            const saved = await tableCallGas('savePOSState', { state: currentSharedPOSState() }, true);
+            if (saved && saved.updated_at) lastPOSStateUpdatedAt = saved.updated_at;
+          }
+          renderAllViews();
+          showToast('☁️ เชื่อมต่อ Google Sheets แล้ว กำลังซิงก์ข้อมูล');
+        } else if (posStateSaveTimer === null) {
+          const state = await tableCallGas('getPOSState');
+          if (state && state.updated_at && state.updated_at !== lastPOSStateUpdatedAt) {
+            applyPOSState(state);
+            renderAllViews();
+          }
+        }
+        await pollPOSOrders();
+      } catch (err) {
+        remotePOSAvailable = false;
+        console.warn('Apps Script reconnect/sync failed', err);
+      }
     }
 
     async function pollPOSOrders() {
@@ -4790,9 +4846,17 @@
       try {
         const remoteState = await tableCallGas('getPOSState');
         remotePOSAvailable = true;
-        if (remoteState) applyPOSState(remoteState);
+        if (remoteState) {
+          applyPOSState(remoteState);
+          const sharedKeys = ['members', 'promotions', 'stockList', 'expensesList', 'suppliersList', 'poList', 'staffList', 'attendanceList'];
+          if (sharedKeys.some(key => !Array.isArray(remoteState[key]))) {
+            const migrated = await tableCallGas('savePOSState', { state: currentSharedPOSState() }, true);
+            if (migrated && migrated.updated_at) lastPOSStateUpdatedAt = migrated.updated_at;
+          }
+        }
         else if (!customerView) {
-          await tableCallGas('savePOSState', { state: { tables, menuItems, settings: storeSettings } }, true);
+          const saved = await tableCallGas('savePOSState', { state: currentSharedPOSState() }, true);
+          if (saved && saved.updated_at) lastPOSStateUpdatedAt = saved.updated_at;
         }
       } catch (err) {
         remotePOSAvailable = false;
@@ -4819,9 +4883,9 @@
           feedback.style.display = 'block';
           feedback.textContent = 'เชื่อมต่อระบบร้านไม่ได้ กรุณาแจ้งพนักงาน';
         }
-      } else if (remotePOSAvailable) {
-        setInterval(pollPOSOrders, 6000);
-        pollPOSOrders();
+      } else {
+        if (remotePOSAvailable) pollPOSOrders();
+        if (!posCloudSyncTimer) posCloudSyncTimer = setInterval(reconnectAndSyncPOS, 10000);
       }
     });
 
