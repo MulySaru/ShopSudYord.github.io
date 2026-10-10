@@ -1471,7 +1471,7 @@
           <span class="notif-bell-badge" id="top-bell-badge" style="display: none;">0</span>
         </button>
 
-        <div class="user-profile">
+        <div class="user-profile" onclick="logoutAdmin()" title="ออกจากระบบ / เปลี่ยนบัญชี" style="cursor:pointer">
           <div class="avatar-circle">ผู้</div>
           <div class="user-info">
             <div class="user-name">ผู้ดูแลระบบ</div>
@@ -2894,46 +2894,73 @@
     let lastPOSStateUpdatedAt = '';
     let posCloudSyncTimer = null;
     let posOrderSyncInitialized = false;
+    let employeeSyncLastAt = 0;
     let tableCallAdminToken = '';
+    let tableCallUser = null;
     const TABLECALL_ADMIN_SESSION_KEY = 'tablecall_admin_session_v1';
     const TABLECALL_ADMIN_SESSION_TTL = 6 * 60 * 60 * 1000;
+
+    function updateSignedInUserLabel() {
+      if (!tableCallUser) return;
+      document.querySelectorAll('.user-name').forEach(node => { node.textContent = tableCallUser.name || 'พนักงาน'; });
+      document.querySelectorAll('.user-role').forEach(node => { node.textContent = tableCallUser.role === 'owner' ? 'เจ้าของร้าน' : (tableCallUser.role || 'พนักงาน'); });
+    }
+
+    async function logoutAdmin() {
+      if (!confirm('ออกจากระบบเพื่อให้พนักงานคนถัดไปเข้าสู่ระบบหรือไม่?')) return;
+      const token = tableCallAdminToken;
+      tableCallAdminToken = '';
+      tableCallUser = null;
+      localStorage.removeItem(TABLECALL_ADMIN_SESSION_KEY);
+      try { await tableCallGas('logoutAdmin', { adminToken: token }); } catch (_) {}
+      window.location.reload();
+    }
 
     function openAdminLogin() {
       const overlay = document.getElementById('admin-login-overlay');
       const input = document.getElementById('admin-login-key');
+      const accountSelect = document.getElementById('admin-login-account');
       const error = document.getElementById('admin-login-error');
       overlay.classList.add('open');
       document.getElementById('sidebar').style.visibility = 'hidden';
       document.getElementById('main-wrapper').style.visibility = 'hidden';
       input.value = '';
       error.textContent = '';
-      input.focus();
+      accountSelect.innerHTML = '<option value="">กำลังโหลดบัญชี...</option>';
+      tableCallGas('listLoginAccounts').then(accounts => {
+        accountSelect.innerHTML = '<option value="">เลือกบัญชีผู้ใช้</option>' + (accounts || []).map(account => `<option value="${custEscape(account.employee_id)}">${custEscape(account.name)}${account.role === 'owner' ? ' • เจ้าของร้าน' : ' • พนักงาน'}</option>`).join('');
+      }).catch(err => { accountSelect.innerHTML = '<option value="">โหลดบัญชีไม่สำเร็จ</option>'; error.textContent = explainAppsScriptError(err); });
+      setTimeout(() => input.focus(), 0);
       return new Promise(resolve => { window.completeAdminLogin = resolve; });
     }
 
     async function submitAdminLogin(event) {
       event.preventDefault();
       const input = document.getElementById('admin-login-key');
+      const accountId = document.getElementById('admin-login-account').value;
       const button = document.getElementById('admin-login-submit');
       const error = document.getElementById('admin-login-error');
       const key = input.value.trim();
-      if (!key) { error.textContent = 'กรุณากรอกรหัสผู้ดูแล'; input.focus(); return; }
+      if (!accountId) { error.textContent = 'กรุณาเลือกบัญชีผู้ใช้'; document.getElementById('admin-login-account').focus(); return; }
+      if (!key) { error.textContent = 'กรุณากรอก PIN'; input.focus(); return; }
       button.disabled = true;
       button.textContent = 'กำลังตรวจสอบ…';
       error.textContent = '';
       try {
-        const login = await tableCallGas('loginAdmin', { adminKey: key });
+        const login = await tableCallGasPost('loginAdmin', { employeeId: accountId, adminKey: key });
         if (!login || !login.token) throw new Error('Apps Script ไม่ได้ส่งโทเคนกลับมา ให้อัปเดต Code.gs และ Deploy เวอร์ชันใหม่');
         tableCallAdminToken = login.token;
+        tableCallUser = login.employee || null;
+        updateSignedInUserLabel();
         try {
-          localStorage.setItem(TABLECALL_ADMIN_SESSION_KEY, JSON.stringify({ token: login.token, expiresAt: Date.now() + Math.min(Number(login.expiresIn) || 21600, TABLECALL_ADMIN_SESSION_TTL / 1000) * 1000 }));
+          localStorage.setItem(TABLECALL_ADMIN_SESSION_KEY, JSON.stringify({ token: login.token, employee: tableCallUser, expiresAt: Date.now() + Math.min(Number(login.expiresIn) || 21600, TABLECALL_ADMIN_SESSION_TTL / 1000) * 1000 }));
         } catch (storageError) { console.warn('Admin session will be remembered only for this page', storageError); }
         document.getElementById('admin-login-overlay').classList.remove('open');
         document.getElementById('sidebar').style.visibility = '';
         document.getElementById('main-wrapper').style.visibility = '';
         if (window.completeAdminLogin) window.completeAdminLogin(true);
       } catch (err) {
-        error.textContent = /รหัสผู้ดูแล/.test(String(err.message)) ? 'รหัสไม่ถูกต้อง กรุณาลองใหม่' : explainAppsScriptError(err);
+        error.textContent = /บัญชีหรือ PIN ไม่ถูกต้อง/.test(String(err.message)) ? 'บัญชีหรือ PIN ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่' : explainAppsScriptError(err);
         input.select();
       } finally {
         button.disabled = false;
@@ -2943,6 +2970,39 @@
 
     function currentSharedPOSState() {
       return { tables, menuItems, settings: storeSettings, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
+    }
+
+    async function tableCallGasPost(action, payload = {}, needsAdmin = false) {
+      if (!TABLECALL_APPS_SCRIPT_URL) throw new Error('ยังไม่ได้ตั้งค่า Apps Script URL');
+      if (needsAdmin) {
+        if (!tableCallAdminToken) throw new Error('กรุณาเข้าสู่ระบบใหม่');
+        payload = { ...payload, adminToken: tableCallAdminToken };
+      }
+      const random = new Uint8Array(16);
+      crypto.getRandomValues(random);
+      const requestId = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
+      const formBody = new URLSearchParams({ payload: JSON.stringify({ action, ...payload, requestId }) });
+      try {
+        await fetch(TABLECALL_APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: formBody, credentials: 'omit' });
+      } catch (err) {
+        throw new Error('ส่งคำขอไป Apps Script ไม่สำเร็จ: ' + (err.message || err));
+      }
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const result = await tableCallGas('consumePostResult', { requestId });
+        if (!result || result.pending !== true) {
+          if (result && result.error) {
+            if (/รหัสผู้ดูแล|เซสชันผู้ดูแล|บัญชีนี้ถูกปิดใช้งาน/.test(String(result.error))) {
+              tableCallAdminToken = '';
+              localStorage.removeItem(TABLECALL_ADMIN_SESSION_KEY);
+              openAdminLogin();
+            }
+            throw new Error(result.error);
+          }
+          return result;
+        }
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+      throw new Error('Apps Script ยังไม่ตอบกลับคำขอ กรุณาลองใหม่');
     }
 
     function tableCallGas(action, payload = {}, needsAdmin = false) {
@@ -2960,7 +3020,7 @@
           script.remove();
           if (error) return reject(error);
           if (result && result.error) {
-            if (/รหัสผู้ดูแล|เซสชันผู้ดูแล/.test(String(result.error))) {
+            if (/รหัสผู้ดูแล|เซสชันผู้ดูแล|บัญชีนี้ถูกปิดใช้งาน/.test(String(result.error))) {
               tableCallAdminToken = '';
               localStorage.removeItem(TABLECALL_ADMIN_SESSION_KEY);
               openAdminLogin();
@@ -2982,7 +3042,7 @@
     function explainAppsScriptError(error) {
       const message = String(error && error.message || error || 'เชื่อมต่อไม่สำเร็จ');
       if (/Unknown action/i.test(message)) {
-        return 'URL นี้ชี้ไป Apps Script ที่ยังไม่มี loginAdmin: ตรวจว่าแก้ Code.gs ในโปรเจกต์เดียวกับ URL นี้ แล้ว Deploy > Manage deployments > Edit > New version > Deploy; ถ้าสร้าง New deployment ให้เปลี่ยน URL ใน index.html และ TableCall.html เป็น URL ใหม่ด้วย';
+        return 'Apps Script ยังไม่มีระบบบัญชีพนักงานเวอร์ชันนี้: อัปเดต Code.gs ในโปรเจกต์ที่ URL นี้ชี้อยู่ แล้ว Deploy > Manage deployments > Edit > New version > Deploy';
       }
       if (/Unexpected token.*eyJ|not valid JSON/i.test(message)) {
         return 'Apps Script ที่ Deploy ยังเป็นเวอร์ชันเก่า: ให้วาง Code.gs ล่าสุด แล้ว Deploy > Manage deployments > Edit > New version';
@@ -3029,6 +3089,8 @@
       { id: '2', name: 'วิภาดา พรหมดี', role: 'พนักงานบริการ (เสิร์ฟ)', emoji: '👩‍💼', status: 'active', clockIn: '09:00' }
     ];
     let attendanceList = JSON.parse(localStorage.getItem('pos_attendance')) || [];
+    let employeeRecords = [];
+    let attendanceRows = [];
     let storeSettings = JSON.parse(localStorage.getItem('pos_settings')) || {
       name: 'ร้านอาหารทดสอบ POS',
       addr: '123 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110',
@@ -4440,8 +4502,8 @@
       renderPoList();
     }
 
-    // 18.14 STAFF & ATTENDANCE
-    function renderStaff() {
+    // 18.14 STAFF & ATTENDANCE (legacy local-only handlers)
+    function legacyRenderStaff() {
       const grid = document.getElementById('staff-grid');
       grid.innerHTML = staffList.map(s => `
         <div class="table-card">
@@ -4465,7 +4527,7 @@
       `).join('');
     }
 
-    function openAddStaffModal() {
+    function legacyOpenAddStaffModal() {
       const name = prompt('กรอกชื่อพนักงานใหม่:');
       if (!name) return;
       const role = prompt('ตำแหน่ง (เช่น เชฟ, แคชเชียร์, พนักงานบริการ):') || 'พนักงานบริการ';
@@ -4475,7 +4537,7 @@
       showToast(`✅ เพิ่มพนักงาน ${name} เรียบร้อยแล้ว`);
     }
 
-    function toggleStaffShift(id) {
+    function legacyToggleStaffShift(id) {
       const s = staffList.find(item => item.id === id);
       if (!s) return;
       s.status = s.status === 'active' ? 'off' : 'active';
@@ -4493,16 +4555,17 @@
       saveState('SYNC');
       renderStaff();
       renderAttendance();
+      employeeSyncLastAt = Date.now();
       showToast(`บันทึกเวลาของ ${s.name} (${s.status === 'active' ? 'เข้างาน' : 'ออกงาน'})`);
     }
 
-    function deleteStaff(id) {
+    function legacyDeleteStaff(id) {
       staffList = staffList.filter(s => s.id !== id);
       saveState('SYNC');
       renderStaff();
     }
 
-    function renderAttendance() {
+    function legacyRenderAttendance() {
       const tbody = document.getElementById('attendance-tbody');
       if (attendanceList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีประวัติการลงเวลา</td></tr>`;
@@ -4517,6 +4580,58 @@
           <td><span class="status-badge ${a.status === 'เข้างาน' ? 'status-available' : 'status-calling'}">${a.status}</span></td>
         </tr>
       `).join('');
+    }
+
+    // Staff and attendance are kept in dedicated Sheets, separate from POSState.
+    async function refreshEmployeeData() {
+      const [employees, records] = await Promise.all([tableCallGas('listStaff', {}, true), tableCallGas('listAttendance', {}, true)]);
+      employeeRecords = employees || [];
+      attendanceRows = records || [];
+      renderStaff();
+      renderAttendance();
+    }
+
+    function renderStaff() {
+      const grid = document.getElementById('staff-grid');
+      const addButton = document.querySelector('#view-staff .card-header-flex .btn-primary');
+      const isOwner = tableCallUser && tableCallUser.role === 'owner';
+      if (addButton) addButton.style.display = isOwner ? '' : 'none';
+      if (!employeeRecords.length) { grid.innerHTML = '<div style="padding:20px;color:var(--text-muted)">ยังไม่มีข้อมูลพนักงาน</div>'; return; }
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      grid.innerHTML = employeeRecords.map(employee => {
+        const ownAccount = tableCallUser && String(tableCallUser.employee_id) === String(employee.employee_id);
+        const shift = attendanceRows.find(row => String(row.employee_id) === String(employee.employee_id) && String(row.work_date).slice(0, 10) === todayKey && !row.clock_out);
+        return `<div class="table-card"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${employee.role === 'owner' ? '👑' : '👤'}</div><div><h4 style="font-size:15px;font-weight:700">${custEscape(employee.name)}</h4><div style="font-size:12px;color:var(--text-muted)">${employee.role === 'owner' ? 'เจ้าของร้าน' : custEscape(employee.role || 'พนักงาน')}</div></div></div><div style="font-size:12px;color:var(--text-muted);margin:12px 0">สถานะวันนี้: <strong>${shift ? 'กำลังทำงาน' : 'ยังไม่ลงเวลา'}</strong>${shift ? ` · เข้างาน ${custEscape(shift.clock_in)}` : ''}</div><div style="display:flex;gap:8px">${ownAccount ? `<button class="btn-tbl-action" style="flex:2" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : '<span style="flex:2;color:var(--text-muted);font-size:12px;padding:10px 0">ลงเวลาได้เมื่อเข้าบัญชีนี้</span>'}${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444" aria-label="ลบพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}</div></div>`;
+      }).join('');
+    }
+
+    function renderAttendance() {
+      const tbody = document.getElementById('attendance-tbody');
+      if (!attendanceRows.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px">ยังไม่มีประวัติการลงเวลา</td></tr>'; return; }
+      tbody.innerHTML = attendanceRows.map(record => `<tr><td style="font-weight:700">${custEscape(record.employee_name)}</td><td>${custEscape(record.work_date)}</td><td style="font-weight:700;color:#059669">${custEscape(record.clock_in)}</td><td style="color:var(--text-muted)">${custEscape(record.clock_out || '—')}</td><td><span class="status-badge ${record.clock_out ? 'status-calling' : 'status-available'}">${custEscape(record.status)}</span></td></tr>`).join('');
+    }
+
+    function openAddStaffModal() {
+      if (!tableCallUser || tableCallUser.role !== 'owner') { showToast('เฉพาะเจ้าของร้านเท่านั้นที่เพิ่มพนักงานได้'); return; }
+      const name = (prompt('กรอกชื่อพนักงานใหม่:') || '').trim();
+      if (!name) return;
+      const role = (prompt('ตำแหน่ง เช่น เชฟ, แคชเชียร์, พนักงานบริการ:') || 'พนักงานบริการ').trim();
+      const pin = (prompt('ตั้ง PIN ตัวเลข 4–12 หลักให้พนักงาน:') || '').trim();
+      if (!/^\d{4,12}$/.test(pin)) { showToast('PIN ต้องเป็นตัวเลข 4–12 หลัก'); return; }
+      if (pin !== (prompt('กรอก PIN ซ้ำเพื่อยืนยัน:') || '').trim()) { showToast('PIN ไม่ตรงกัน ยกเลิกการเพิ่มพนักงาน'); return; }
+      tableCallGasPost('createStaff', { staff: { name, role, pin } }, true).then(() => refreshEmployeeData()).then(() => showToast(`✅ เพิ่มบัญชีพนักงาน ${name} แล้ว`)).catch(err => showToast(`เพิ่มพนักงานไม่สำเร็จ: ${err.message}`));
+    }
+
+    function toggleStaffShift() {
+      tableCallGas('clockStaff', {}, true).then(result => refreshEmployeeData().then(() => showToast(result.action === 'clock_in' ? 'บันทึกเวลาเข้างานแล้ว' : 'บันทึกเวลาออกงานแล้ว'))).catch(err => showToast(`บันทึกเวลาไม่สำเร็จ: ${err.message}`));
+    }
+
+    function deleteStaff(id) {
+      const employee = employeeRecords.find(item => String(item.employee_id) === String(id));
+      if (!tableCallUser || tableCallUser.role !== 'owner') { showToast('เฉพาะเจ้าของร้านเท่านั้นที่ลบบัญชีได้'); return; }
+      if (!employee || !confirm(`ปิดใช้งานบัญชี ${employee.name} ใช่หรือไม่? ประวัติลงเวลาจะยังเก็บในชีต`)) return;
+      tableCallGas('deleteStaff', { employeeId: id }, true).then(() => refreshEmployeeData()).then(() => showToast(`ปิดใช้งานบัญชี ${employee.name} แล้ว`)).catch(err => showToast(`ลบบัญชีไม่สำเร็จ: ${err.message}`));
     }
 
     // 18.15 MANAGE TABLES & QR CODES
@@ -4812,6 +4927,7 @@
           }
         }
         await pollPOSOrders();
+        if (tableCallAdminToken && Date.now() - employeeSyncLastAt >= 30000) await refreshEmployeeData();
       } catch (err) {
         remotePOSAvailable = false;
         console.warn('Apps Script reconnect/sync failed', err);
@@ -4867,8 +4983,10 @@
         try {
           const stored = JSON.parse(localStorage.getItem(TABLECALL_ADMIN_SESSION_KEY) || 'null');
           if (stored && stored.token && Number(stored.expiresAt) > Date.now()) {
-            await tableCallGas('checkAdminSession', { adminToken: stored.token });
+            const session = await tableCallGas('checkAdminSession', { adminToken: stored.token });
             tableCallAdminToken = stored.token;
+            tableCallUser = session.employee || stored.employee || null;
+            updateSignedInUserLabel();
             sessionValid = true;
           }
         } catch (err) {
@@ -4898,6 +5016,11 @@
       } catch (err) {
         remotePOSAvailable = false;
         console.error('Apps Script connection failed', err);
+      }
+
+      if (!customerView && tableCallAdminToken) {
+        try { await refreshEmployeeData(); }
+        catch (err) { console.warn('Employee data could not be loaded', err); }
       }
 
       // Check if store settings have custom name
@@ -5056,14 +5179,16 @@
   <div class="modal-overlay" id="admin-login-overlay">
     <form class="modal-box admin-login-card" onsubmit="submitAdminLogin(event)">
       <div class="admin-login-icon">🔐</div>
-      <h2 style="text-align:center;margin:0 0 6px;font-size:21px">เข้าสู่ระบบผู้ดูแล</h2>
-      <p style="text-align:center;color:#64748b;font-size:13px;margin:0 0 20px">กรอกรหัสผู้ดูแลเพื่อเข้าใช้งานระบบจัดการร้าน</p>
-      <label for="admin-login-key" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">รหัสผู้ดูแล</label>
-      <input id="admin-login-key" class="form-input" type="password" autocomplete="off" placeholder="กรอกรหัสผู้ดูแล" required>
+      <h2 style="text-align:center;margin:0 0 6px;font-size:21px">เข้าสู่ระบบพนักงาน</h2>
+      <p style="text-align:center;color:#64748b;font-size:13px;margin:0 0 20px">เลือกบัญชี แล้วกรอก PIN ส่วนตัว</p>
+      <label for="admin-login-account" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">บัญชีผู้ใช้</label>
+      <select id="admin-login-account" class="form-input" required style="margin-bottom:12px"><option value="">กำลังโหลดบัญชี...</option></select>
+      <label for="admin-login-key" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">PIN</label>
+      <input id="admin-login-key" class="form-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="กรอก PIN" required>
       <div id="admin-login-error" role="alert"></div>
       <button id="admin-login-submit" class="btn-primary" type="submit" style="width:100%;padding:11px;border-radius:9px">เข้าสู่ระบบ</button>
       <a href="https://script.google.com/macros/s/AKfycbxmfaUtmsebcq3qoEVvD0wuzJrAlGchR3h640NwkFEUOw4WzvAbNbW1BXLmm_uh13dg/exec" target="_blank" rel="noopener" style="display:block;text-align:center;font-size:12px;margin-top:12px">ทดสอบเปิด Apps Script ในแท็บใหม่</a>
-      <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:10px">จำการเข้าสู่ระบบในเครื่องนี้ได้สูงสุด 6 ชั่วโมง</div>
+      <div style="text-align:center;color:#94a3b8;font-size:11px;margin-top:10px">เข้าสู่ระบบในเครื่องนี้ได้นานสูงสุด 6 ชั่วโมง</div>
     </form>
   </div>
 </body>
