@@ -1549,6 +1549,15 @@
           </div>
         </div>
 
+        <div id="floor-mobile-tools" style="display:none">
+          <label class="floor-mobile-search" for="floor-mobile-search-input">
+            <span aria-hidden="true">🔎</span>
+            <input id="floor-mobile-search-input" type="search" placeholder="ค้นหาเลขโต๊ะ เช่น S1" oninput="renderFloorTables()" autocomplete="off">
+            <button type="button" onclick="clearFloorMobileSearch()" aria-label="ล้างคำค้น">ล้าง</button>
+          </label>
+          <div id="floor-mobile-status-filters" aria-label="กรองสถานะโต๊ะ"></div>
+          <div id="floor-mobile-result-count" role="status" aria-live="polite"></div>
+        </div>
         <div class="zone-filters" id="zone-filter-container">
           <button class="zone-pill active" onclick="filterZone('ALL')">ทั้งหมด</button>
           <button class="zone-pill" onclick="filterZone('S')">โซน S (หน้าร้าน)</button>
@@ -3214,6 +3223,7 @@
 
     let currentSelectedTableForAction = null;
     let currentFilterZone = 'ALL';
+    let currentFloorStatusFilter = 'ALL';
     let currentView = 'floor';
 
     // Broadcast Channel for Live Multi-tab Synchronisation
@@ -3660,6 +3670,18 @@
       renderFloorTables();
     }
 
+    function setFloorStatusFilter(status) {
+      currentFloorStatusFilter = status || 'ALL';
+      renderFloorTables();
+    }
+
+    function clearFloorMobileSearch() {
+      const input = document.getElementById('floor-mobile-search-input');
+      if (input) input.value = '';
+      renderFloorTables();
+      input?.focus();
+    }
+
     function renderFloorTables() {
       const container = document.getElementById('tables-container');
       container.innerHTML = '';
@@ -3704,7 +3726,43 @@
         kdsBadge.style.display = 'none';
       }
 
-      const filtered = tables.filter(t => currentFilterZone === 'ALL' || t.zone === currentFilterZone);
+      const mobileFloorControls = window.matchMedia('(max-width: 1100px)').matches;
+      const searchInput = document.getElementById('floor-mobile-search-input');
+      const searchText = mobileFloorControls ? String(searchInput?.value || '').trim().toLocaleLowerCase() : '';
+      const zoneTables = tables.filter(t => currentFilterZone === 'ALL' || t.zone === currentFilterZone);
+      const statusFilterHost = document.getElementById('floor-mobile-status-filters');
+      const resultCount = document.getElementById('floor-mobile-result-count');
+
+      if (statusFilterHost) {
+        const matchingZoneAndSearch = zoneTables.filter(t => !searchText || String(t.number).toLocaleLowerCase().includes(searchText));
+        const attentionCount = matchingZoneAndSearch.filter(t => t.status === 'calling' || t.status === 'bill').length;
+        const occupiedCount = matchingZoneAndSearch.filter(t => t.status === 'occupied').length;
+        const idleCount = matchingZoneAndSearch.filter(t => t.status === 'idle').length;
+        const filters = [
+          ['ALL', 'ทั้งหมด', matchingZoneAndSearch.length],
+          ['ATTENTION', 'ต้องดูแล', attentionCount],
+          ['OCCUPIED', 'มีลูกค้า', occupiedCount],
+          ['IDLE', 'โต๊ะว่าง', idleCount]
+        ];
+        statusFilterHost.innerHTML = filters.map(([key, label, count]) =>
+          `<button type="button" class="floor-status-chip${currentFloorStatusFilter === key ? ' active' : ''}" onclick="setFloorStatusFilter('${key}')">${label}<span>${count}</span></button>`
+        ).join('');
+      }
+
+      const filtered = zoneTables.filter(t => {
+        if (searchText && !String(t.number).toLocaleLowerCase().includes(searchText)) return false;
+        if (!mobileFloorControls || currentFloorStatusFilter === 'ALL') return true;
+        if (currentFloorStatusFilter === 'ATTENTION') return t.status === 'calling' || t.status === 'bill';
+        if (currentFloorStatusFilter === 'OCCUPIED') return t.status === 'occupied';
+        if (currentFloorStatusFilter === 'IDLE') return t.status === 'idle';
+        return true;
+      });
+
+      if (resultCount) resultCount.textContent = `แสดง ${filtered.length} จาก ${zoneTables.length} โต๊ะ`;
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="floor-empty-state">ไม่พบโต๊ะที่ตรงกับการค้นหา<br><span>ลองเปลี่ยนคำค้นหา โซน หรือสถานะ</span></div>';
+        return;
+      }
 
       filtered.forEach(t => {
         const card = document.createElement('div');

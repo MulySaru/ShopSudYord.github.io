@@ -1,5 +1,51 @@
 /* Responsive layout for the staff/admin POS only.
    Loaded only at tablet/mobile widths; the customer ordering page is intentionally excluded. */
+@media screen and (max-width: 1100px) {
+  body:not(.customer-order-mode) #floor-mobile-tools { display: block !important; margin: 0 0 12px; }
+  body:not(.customer-order-mode) .floor-mobile-search {
+    display: flex; align-items: center; gap: 9px; min-height: 52px; padding: 4px 5px 4px 12px;
+    border: 1px solid var(--border-color); border-radius: 13px; background: #fff; color: var(--text-muted);
+  }
+  body:not(.customer-order-mode) .floor-mobile-search input {
+    flex: 1; width: 100%; min-width: 0; min-height: 42px; padding: 0; border: 0; outline: 0;
+    background: transparent; color: var(--text-main); font: inherit; font-size: 16px;
+  }
+  body:not(.customer-order-mode) .floor-mobile-search input::-webkit-search-cancel-button { display: none; }
+  body:not(.customer-order-mode) .floor-mobile-search button {
+    flex: 0 0 auto; min-width: 48px; min-height: 42px; padding: 0 9px; border: 0; border-radius: 10px;
+    background: #eef2ff; color: #4338ca; font: inherit; font-size: 13px; font-weight: 700;
+  }
+  body:not(.customer-order-mode) #floor-mobile-status-filters {
+    display: flex; gap: 8px; overflow-x: auto; margin: 9px -2px 0; padding: 1px 2px 5px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+  }
+  body:not(.customer-order-mode) .floor-status-chip {
+    display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 7px;
+    min-height: 42px; padding: 0 13px; border: 1px solid var(--border-color); border-radius: 999px;
+    background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 650; white-space: nowrap;
+  }
+  body:not(.customer-order-mode) .floor-status-chip span {
+    display: inline-flex; min-width: 20px; height: 20px; align-items: center; justify-content: center;
+    padding: 0 5px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px;
+  }
+  body:not(.customer-order-mode) .floor-status-chip.active { border-color: #4f46e5; background: #4f46e5; color: #fff; }
+  body:not(.customer-order-mode) .floor-status-chip.active span { background: rgba(255,255,255,.2); color: #fff; }
+  body:not(.customer-order-mode) #floor-mobile-result-count { margin: 5px 2px 0; color: var(--text-muted); font-size: 12px; }
+  body:not(.customer-order-mode) #view-floor .zone-filters { gap: 8px; }
+  body:not(.customer-order-mode) #view-floor .zone-pill { min-height: 42px; padding: 0 14px; white-space: nowrap; }
+  body:not(.customer-order-mode) #view-floor .table-card { min-height: 0; padding: 13px; border-radius: 14px; }
+  body:not(.customer-order-mode) #view-floor .table-card-top { align-items: center; gap: 8px; }
+  body:not(.customer-order-mode) #view-floor .table-num { font-size: 23px; }
+  body:not(.customer-order-mode) #view-floor .table-card .table-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  body:not(.customer-order-mode) #view-floor .table-card .btn-tbl-action { min-height: 48px; justify-content: center; padding: 8px 6px; }
+  body:not(.customer-order-mode) #view-floor .table-card .call-box { margin: 8px 0; padding: 9px 10px; }
+  body:not(.customer-order-mode) #view-floor .floor-empty-state {
+    grid-column: 1 / -1; padding: 28px 14px; border: 1px dashed var(--border-color); border-radius: 14px;
+    background: #fff; color: var(--text-main); text-align: center; font-weight: 700; line-height: 1.7;
+  }
+  body:not(.customer-order-mode) #view-floor .floor-empty-state span { color: var(--text-muted); font-size: 12px; font-weight: 400; }
+}
+
 @media screen and (min-width: 761px) and (max-width: 1100px) {
   #sidebar { width: 218px; min-width: 218px; }
   #content-container { padding: 18px; }
@@ -97,8 +143,11 @@
   body:not(.customer-order-mode) .stat-info p { font-size: 10.5px; line-height: 1.3; }
   body:not(.customer-order-mode) .zone-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; margin: 0 -2px 14px; scrollbar-width: thin; }
   body:not(.customer-order-mode) .zone-pill { flex: 0 0 auto; min-height: 38px; }
-  body:not(.customer-order-mode) .table-grid { grid-template-columns: 1fr; gap: 10px; }
-  body:not(.customer-order-mode) .table-card { min-height: 160px; padding: 14px; }
+  body:not(.customer-order-mode) #view-floor .stats-bar { margin-bottom: 12px; }
+  body:not(.customer-order-mode) #view-floor .table-grid { grid-template-columns: 1fr; gap: 9px; }
+  body:not(.customer-order-mode) #view-floor .table-card { min-height: 0; padding: 12px; gap: 9px; }
+  body:not(.customer-order-mode) #view-floor .table-card .table-actions { gap: 7px; }
+  body:not(.customer-order-mode) #view-floor .table-card .btn-tbl-action { font-size: 12px; }
   body:not(.customer-order-mode) .sales-history-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; padding: 10px; }
   body:not(.customer-order-mode) .sales-history-search { grid-column: 1 / -1; }
   body:not(.customer-order-mode) .sales-history-all-dates { grid-column: 1 / 2; }
@@ -185,6 +234,8 @@
   body:not(.customer-order-mode) .content-card { padding: 12px; }
   body:not(.customer-order-mode) .stat-card { align-items: flex-start; flex-direction: column; }
   body:not(.customer-order-mode) .stat-info h3 { font-size: 16px; }
+  body:not(.customer-order-mode) #view-floor .stat-card { min-height: 88px; }
+  body:not(.customer-order-mode) #view-floor .table-card .table-num { font-size: 21px; }
   body:not(.customer-order-mode) #dash-hourly-chart { grid-template-columns: repeat(6, minmax(38px, 1fr)) !important; }
   body:not(.customer-order-mode) .manage-table-card { grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; padding: 10px; }
   body:not(.customer-order-mode) .manage-table-card > div:nth-child(2) img { width: 68px !important; height: 68px !important; }
