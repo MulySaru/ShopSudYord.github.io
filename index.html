@@ -3451,7 +3451,8 @@
       select.innerHTML = tables.map(t => `<option value="${t.number}" ${t.number === tableNum ? 'selected' : ''}>โต๊ะ ${t.number} (โซน ${t.zone})</option>`).join('');
 
       const menuBox = document.getElementById('order-menu-selection');
-      menuBox.innerHTML = menuItems.map(m => `
+      const availableItems = menuItems.filter(m => m.available !== false);
+      menuBox.innerHTML = availableItems.length ? availableItems.map(m => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
           <div>
             <div style="font-weight: 700; font-size: 13.5px;">${m.name}</div>
@@ -3463,7 +3464,7 @@
             <button type="button" class="action-icon-btn" onclick="adjustOrderQty('${m.id}', 1)">+</button>
           </div>
         </div>
-      `).join('');
+      `).join('') : '<div style="padding:16px;text-align:center;color:var(--text-muted);">ไม่มีเมนูที่พร้อมจำหน่าย</div>';
 
       document.getElementById('order-note-input').value = '';
       document.getElementById('new-order-modal').classList.add('open');
@@ -3481,7 +3482,7 @@
       document.getElementById('new-order-modal').classList.remove('open');
     }
 
-    function submitNewOrder() {
+    async function submitNewOrder() {
       const tableNum = document.getElementById('order-table-select').value;
       const note = document.getElementById('order-note-input').value.trim();
 
@@ -3513,6 +3514,13 @@
         paidAt: null
       };
 
+      try {
+        const saved = await tableCallGas('submitPOSOrder', { order: newOrder });
+        if (saved && saved.id) newOrder.id = saved.id;
+      } catch (err) {
+        alert(`ส่งออเดอร์ไป Google Sheets ไม่สำเร็จ: ${err.message}\nตรวจสอบ Apps Script แล้วลองอีกครั้ง`);
+        return;
+      }
       orders.unshift(newOrder);
 
       // Set table status to occupied
@@ -3524,7 +3532,7 @@
       saveState('SYNC');
       closeNewOrderModal();
       renderAllViews();
-      showToast(`🚀 ส่งออเดอร์โต๊ะ ${tableNum} เข้าครัวเรียบร้อย (฿${total})`);
+      showToast(`🚀 บันทึกออเดอร์โต๊ะ ${tableNum} ลง Google Sheets แล้ว (฿${total})`);
     }
 
     function renderOrdersList() {
@@ -4041,12 +4049,21 @@
           <td style="font-weight: 700;">${m.name}</td>
           <td style="color: var(--text-muted);">${m.category}</td>
           <td style="font-weight: 700;">฿${m.price.toLocaleString()}</td>
-          <td><span class="status-badge status-available">พร้อมจำหน่าย</span></td>
+          <td><button class="status-badge ${m.available === false ? 'status-calling' : 'status-available'}" onclick="toggleMenuAvailability('${m.id}')">${m.available === false ? 'พักขาย' : 'พร้อมขาย'}</button></td>
           <td style="text-align: center;">
             <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteMenuItem('${m.id}')" title="ลบ">🗑️</button>
           </td>
         </tr>
       `).join('');
+    }
+
+    function toggleMenuAvailability(menuId) {
+      const item = menuItems.find(menu => String(menu.id) === String(menuId));
+      if (!item) return;
+      item.available = item.available === false;
+      saveState('SYNC');
+      renderMenuItems();
+      showToast(`${item.name}: ${item.available ? 'พร้อมขาย' : 'พักขาย และซ่อนจากหน้าสั่งอาหาร'}`);
     }
 
     function openAddMenuModal() {
@@ -4076,7 +4093,8 @@
         id: 'm_' + Date.now(),
         name: name,
         category: cat,
-        price: price
+        price: price,
+        available: true
       });
 
       saveState('SYNC');
@@ -4651,15 +4669,15 @@
             createdAt: new Date(order.created_at).toLocaleTimeString('th-TH'),
           });
           if (table) {
-            table.status = 'calling';
-            table.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
+            table.status = 'occupied';
+            table.callNote = 'มีออเดอร์ใหม่จากพนักงาน';
             table.callTime = new Date(order.created_at).toLocaleTimeString('th-TH');
           }
         }
         saveState(null, null, true);
         renderAllViews();
         playChimeSound('calling');
-        showToast(`🔔 มีออเดอร์ใหม่จากลูกค้า ${newOrders.length} รายการ`);
+        showToast(`🔔 ซิงก์ออเดอร์ใหม่ ${newOrders.length} รายการ`);
       } catch (err) { console.error('Apps Script order poll failed', err); }
     }
 
@@ -4730,6 +4748,17 @@
       // Set store name & table badge
       document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
       document.getElementById('cust-table-badge').textContent = tableNum ? `โต๊ะ ${tableNum}` : 'โต๊ะ —';
+      document.querySelector('.cust-header-top > div:first-child > div:nth-child(2)').textContent = 'สแกนเพื่อเรียกพนักงาน';
+      document.getElementById('cust-cat-scroll').style.display = 'none';
+      document.getElementById('cust-menu-grid').style.display = 'none';
+      document.getElementById('cust-cart-bar').style.display = 'none';
+      const menuTitle = document.getElementById('cust-menu-grid').previousElementSibling;
+      if (menuTitle) menuTitle.style.display = 'none';
+      const staffOrderNotice = document.createElement('div');
+      staffOrderNotice.id = 'cust-staff-order-notice';
+      staffOrderNotice.style.cssText = 'margin-top:16px;padding:16px;border:1px solid #c7d2fe;border-radius:12px;background:#eef2ff;color:#3730a3;text-align:center;font-weight:700;';
+      staffOrderNotice.textContent = 'กรุณาแจ้งรายการอาหารกับพนักงาน พนักงานจะเป็นผู้บันทึกออเดอร์ให้';
+      document.getElementById('cust-menu-grid').parentElement.appendChild(staffOrderNotice);
 
       // Build category pills
       const cats = ['ทั้งหมด', ...new Set(menuItems.map(m => m.category))];
@@ -4738,9 +4767,7 @@
         `<button class="cust-cat-pill${i === 0 ? ' active' : ''}" onclick="custFilterCat('${c}', this)">${c}</button>`
       ).join('');
 
-      // Render menu
-      custRenderMenu('ทั้งหมด');
-      custUpdateCartBar();
+      // QR is retained for calling staff and requesting the bill; staff enter food orders.
     }
 
     function custFilterCat(cat, btn) {
@@ -4750,7 +4777,8 @@
     }
 
     function custRenderMenu(cat) {
-      const items = cat === 'ทั้งหมด' ? menuItems : menuItems.filter(m => m.category === cat);
+      const availableItems = menuItems.filter(m => m.available !== false);
+      const items = cat === 'ทั้งหมด' ? availableItems : availableItems.filter(m => m.category === cat);
       const grid = document.getElementById('cust-menu-grid');
       grid.innerHTML = items.map(m => {
         const emoji = MENU_EMOJI[m.category] || '🍽️';
