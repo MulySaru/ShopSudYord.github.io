@@ -249,6 +249,27 @@
 
 /* Make food categories easy to spot and tap on touch screens. */
 @media screen and (max-width: 1100px) {
+  body:not(.customer-order-mode) #view-menu .card-header-flex { gap: 10px; }
+  body:not(.customer-order-mode) #view-menu .card-header-flex > .btn-primary { width: 100%; justify-content: center; }
+  body:not(.customer-order-mode) #view-menu .menu-addon-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  body:not(.customer-order-mode) #view-menu .menu-addon-presets button { min-width: 0 !important; min-height: 42px; padding: 6px 4px; font-size: 11px; }
+  body:not(.customer-order-mode) #view-menu #menu-addons-editor > div[style*="display:flex"] { flex-wrap: wrap; }
+  body:not(.customer-order-mode) #view-menu #menu-addons-editor > div[style*="display:flex"] input:first-child { flex: 1 1 52%; }
+  body:not(.customer-order-mode) #view-menu #menu-addons-editor > div[style*="display:flex"] input:nth-child(2) { flex: 1 1 25%; max-width: none !important; }
+  body:not(.customer-order-mode) #view-menu #menu-addons-editor > div[style*="display:flex"] button { flex: 1 1 100%; min-height: 42px; }
+  body:not(.customer-order-mode) .menu-addon-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 42px 42px; gap: 6px; align-items: center; padding: 7px; border: 1px solid var(--border-color); border-radius: 10px; background: #fff; }
+  body:not(.customer-order-mode) .menu-addon-name { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+  body:not(.customer-order-mode) .menu-addon-name small { display: block; color: #4338ca; font-size: 12px; }
+  body:not(.customer-order-mode) .menu-addon-row .action-icon-btn { width: 42px; min-width: 42px; min-height: 42px; }
+  body:not(.customer-order-mode) .order-addon-options { display: grid; gap: 5px; margin-top: 7px; font-size: 12px; }
+  body:not(.customer-order-mode) .order-addon-options label { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; }
+  body:not(.customer-order-mode) .order-addon-options label span { margin-left: auto; color: #4338ca; font-weight: 700; }
+  body.customer-order-mode .cust-addon-picker { display: grid; gap: 5px; margin-top: 8px; color: #334155; font-size: 12px; }
+  body.customer-order-mode .cust-addon-picker > strong { font-size: 12px; }
+  body.customer-order-mode .cust-addon-picker label { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 9px; border: 1px solid #dbe3f2; border-radius: 9px; background: #f8faff; }
+  body.customer-order-mode .cust-addon-picker label span { margin-left: auto; color: #4338ca; font-weight: 750; white-space: nowrap; }
+  body.customer-order-mode .cust-addon-picker input,
+  body.customer-order-mode .cust-addon-picker input { width: 18px; height: 18px; accent-color: #4338ca; }
   body.customer-order-mode .cust-category-label {
     display: block; margin: 0 0 8px; color: #172554; font-size: 14px; font-weight: 800;
   }

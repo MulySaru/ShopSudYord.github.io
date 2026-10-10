@@ -1885,6 +1885,16 @@
       <section id="view-menu" class="view-section">
         <div class="content-card">
           <div class="card-header-flex">
+            <div>
+              <div class="card-title">🏷️ จัดการหมวดหมู่อาหาร</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">หมวดหมู่ที่เลือกได้ในเมนูและหน้าสั่งอาหาร</div>
+            </div>
+            <button class="btn-primary" data-owner-only="true" onclick="openAddCategoryModal()">➕ เพิ่มหมวดหมู่</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px" id="categories-chips"></div>
+        </div>
+        <div class="content-card">
+          <div class="card-header-flex">
             <div class="card-title">🍽️ จัดการเมนูอาหาร</div>
             <button class="btn-primary" data-owner-only="true" onclick="openAddMenuModal()">➕ เพิ่มเมนูอาหาร</button>
           </div>
@@ -1905,16 +1915,6 @@
               </tbody>
             </table>
           </div>
-        </div>
-        <div class="content-card">
-          <div class="card-header-flex">
-            <div>
-              <div class="card-title">🏷️ จัดการหมวดหมู่อาหาร</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">หมวดหมู่ที่เลือกได้ในเมนูและหน้าสั่งอาหาร</div>
-            </div>
-            <button class="btn-primary" data-owner-only="true" onclick="openAddCategoryModal()">➕ เพิ่มหมวดหมู่</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:10px" id="categories-chips"></div>
         </div>
       </section>
 
@@ -2568,6 +2568,21 @@
         </div>
         <div id="menu-noodle-options-list" style="display:grid;gap:8px;margin-top:10px"></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:6px">กดสถานะเพื่อพักเส้น เส้นที่พักจะไม่แสดงในหน้าสั่งอาหาร</div>
+      </div>
+      <div class="form-group" id="menu-addons-editor">
+        <label>ท็อปปิ้ง / ตัวเลือกพิเศษ</label>
+        <div class="menu-addon-presets">
+          <button type="button" class="btn-tbl-action" onclick="addMenuAddonPreset('ไข่ดาว',10)">+ ไข่ดาว ฿10</button>
+          <button type="button" class="btn-tbl-action" onclick="addMenuAddonPreset('ไข่เจียว',15)">+ ไข่เจียว ฿15</button>
+          <button type="button" class="btn-tbl-action" onclick="addMenuAddonPreset('พิเศษ',10)">+ พิเศษ ฿10</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <input type="text" id="menu-addon-name-input" class="form-input" placeholder="ชื่อท็อปปิ้ง เช่น เพิ่มชีส" maxlength="40">
+          <input type="number" id="menu-addon-price-input" class="form-input" placeholder="ราคา" min="0" step="1" value="10" style="max-width:100px">
+          <button type="button" class="btn-tbl-action" style="min-width:74px" onclick="addMenuAddon()">➕ เพิ่ม</button>
+        </div>
+        <div id="menu-addons-list" style="display:grid;gap:8px;margin-top:10px"></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">ตั้งราคาได้แยกตามเมนู ลูกค้าเลือกได้หลายอย่าง และแก้ไข/พัก/ลบได้</div>
       </div>
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button class="btn-primary" data-owner-only="true" style="flex: 1; justify-content: center;" onclick="saveMenuItem()">💾 บันทึก</button>
@@ -3237,6 +3252,7 @@
     let currentView = 'floor';
     let menuCategories = reconcileMenuCategories(JSON.parse(localStorage.getItem('pos_categories') || 'null') || [...DEFAULT_MENU_CATEGORIES], menuItems);
     let menuModalNoodleOptions = [];
+    let menuModalAddons = [];
     let editingMenuId = null;
 
     // Broadcast Channel for Live Multi-tab Synchronisation
@@ -3405,7 +3421,7 @@
 
     function notifyIncomingPOSOrder(order) {
       const title = `ออเดอร์ใหม่ โต๊ะ ${order.tableNumber || order.table_number || '-'}`;
-      const items = (order.items || []).map(item => `${item.name}${item.noodleChoice ? ` (${item.noodleChoice.name})` : ''} ×${item.qty}`).join(', ');
+      const items = (order.items || []).map(item => `${item.name}${item.noodleChoice ? ` (${item.noodleChoice.name})` : ''}${(item.addons || []).length ? ` + ${(item.addons || []).map(addon => addon.name).join(', ')}` : ''} ×${item.qty}`).join(', ');
       if ('Notification' in window && Notification.permission === 'granted') {
         try { new Notification(title, { body: items || 'มีรายการอาหารใหม่', tag: `tablecall-${order.id}` }); } catch (err) { console.warn('Desktop notification failed', err); }
       }
@@ -3934,6 +3950,7 @@
             <div style="font-weight: 700; font-size: 13.5px;">${custEscape(m.name)}</div>
             <div style="font-size: 11px; color: var(--text-muted);">${custEscape(m.category)} • ฿${m.price}</div>
             ${isNoodleMenu(m) ? `<select id="order-noodle-${custEscape(m.id)}" class="form-input" style="margin-top:6px;max-width:210px;min-height:38px">${availableNoodleOptions(m).map(option => `<option value="${custEscape(option.id)}">${custEscape(option.name)}</option>`).join('')}</select>` : ''}
+            ${(m.addons || []).some(addon => addon.available !== false) ? `<div class="order-addon-options"><strong>ท็อปปิ้งเพิ่ม</strong>${m.addons.filter(addon => addon.available !== false).map(addon => `<label><input type="checkbox" name="order-addon-${custEscape(m.id)}" value="${custEscape(addon.id)}"> ${custEscape(addon.name)} <span>+฿${Number(addon.price || 0).toLocaleString('th-TH')}</span></label>`).join('')}</div>` : ''}
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <button type="button" class="action-icon-btn" onclick="adjustOrderQty('${custEscape(m.id)}', -1)">-</button>
@@ -3974,8 +3991,11 @@
           const noodleSelect = document.getElementById(`order-noodle-${m.id}`);
           const noodleChoice = noodleSelect && availableNoodleOptions(m).find(option => String(option.id) === String(noodleSelect.value));
           if (isNoodleMenu(m) && !noodleChoice) { missingNoodleChoice = true; return; }
-          selectedItems.push({ menuId: String(m.id), name: m.name, price: m.price, qty: qty, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
-          total += m.price * qty;
+          const addonIds = Array.from(document.querySelectorAll(`input[name="order-addon-${CSS.escape(String(m.id))}"]:checked`)).map(input => String(input.value));
+          const addons = (m.addons || []).filter(addon => addon.available !== false && addonIds.includes(String(addon.id)));
+          const linePrice = Number(m.price || 0) + addons.reduce((sum, addon) => sum + (Number(addon.price) || 0), 0);
+          selectedItems.push({ menuId: String(m.id), addonIds, price: linePrice, qty, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
+          total += linePrice * qty;
         }
       });
 
@@ -4005,6 +4025,8 @@
       try {
         const saved = await tableCallGas('submitPOSOrder', { order: newOrder });
         if (saved && saved.id) newOrder.id = saved.id;
+        if (saved && Array.isArray(saved.items)) newOrder.items = saved.items;
+        if (saved && Number.isFinite(Number(saved.total))) { newOrder.total = Number(saved.total); total = newOrder.total; }
       } catch (err) {
         alert(`ส่งออเดอร์ไป Google Sheets ไม่สำเร็จ: ${err.message}\nตรวจสอบ Apps Script แล้วลองอีกครั้ง`);
         return;
@@ -4034,7 +4056,7 @@
 
       orders.forEach(o => {
         const tr = document.createElement('tr');
-        const itemsText = o.items.map(i => `${custEscape(i.name)}${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''} x${i.qty}`).join(', ');
+        const itemsText = o.items.map(i => `${custEscape(i.name)}${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${(i.addons || []).length ? ` + ${i.addons.map(addon => custEscape(addon.name)).join(', ')}` : ''} x${i.qty}`).join(', ');
         const totalQty = o.items.reduce((s, i) => s + i.qty, 0);
 
         let statusBadge = '<span class="status-badge" style="background:#fef3c7; color:#b45309;">⏳ รอทำ</span>';
@@ -4114,7 +4136,7 @@
           </div>
           <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">🕒 เวลาสั่ง: ${o.time || o.createdAt || 'ไม่ระบุ'} · ${o.source === 'customer_link' || o.source === 'qr' ? 'สั่งจาก QR' : 'พนักงานรับออเดอร์'} · ${Number(o.guestCount) || 1} คน</div>
           <ul style="font-size: 13.5px; line-height: 1.8; padding-left: 18px; margin-bottom: 16px;">
-            ${o.items.map(i => `<li><strong>${custEscape(i.name)}</strong>${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''} x${i.qty}</li>`).join('')}
+            ${o.items.map(i => `<li><strong>${custEscape(i.name)}</strong>${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${(i.addons || []).length ? `<div style="color:#4338ca;font-size:12px">+ ${(i.addons || []).map(addon => custEscape(addon.name)).join(', ')}</div>` : ''} x${i.qty}</li>`).join('')}
           </ul>
           ${o.note ? `<div style="font-size: 12px; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;">📝 หมายเหตุ: ${o.note}</div>` : ''}
           <div style="display: flex; gap: 8px;">
@@ -4259,7 +4281,7 @@
 
       const totalAmount = receiptOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
       document.getElementById('rcpt-items-list').innerHTML = receiptOrders.flatMap(order => (order.items || []).map(item => `
-        <div class="receipt-row"><span>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''} × ${Number(item.qty) || 0}</span><span>${((Number(item.price) || 0) * (Number(item.qty) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span></div>
+        <div class="receipt-row"><span>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${(item.addons || []).length ? `<small style="display:block;color:#4338ca">+ ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}</span><span>${((Number(item.price) || 0) * (Number(item.qty) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span></div>
       `)).join('') || '<div style="text-align:center;color:#64748b;font-size:11px;">ไม่มีรายการอาหาร</div>';
 
       document.getElementById('rcpt-subtotal').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -4619,6 +4641,12 @@
             })).filter(option => option.name);
           }
         }
+        normalized.addons = (Array.isArray(normalized.addons) ? normalized.addons : []).map((addon, index) => ({
+          id: String(addon.id || `addon_${index + 1}`),
+          name: String(addon.name || '').trim(),
+          price: Math.max(0, Number(addon.price) || 0),
+          available: addon.available !== false
+        })).filter(addon => addon.name);
         return normalized;
       });
     }
@@ -4659,10 +4687,11 @@
       const owner = isStoreOwner();
       tbody.innerHTML = menuItems.map((m, idx) => {
         const noodleStatus = isNoodleMenu(m) ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">เส้นพร้อม ${availableNoodleOptions(m).length}/${(m.noodleOptions || []).length}</div>` : '';
+        const addonStatus = (m.addons || []).length ? `<div style="font-size:11px;color:#4338ca;margin-top:4px">ท็อปปิ้ง ${(m.addons || []).length} รายการ</div>` : '';
         return `
         <tr>
           <td>${idx + 1}</td>
-          <td style="font-weight: 700;">${custEscape(m.name)}${noodleStatus}</td>
+          <td style="font-weight: 700;">${custEscape(m.name)}${noodleStatus}${addonStatus}</td>
           <td style="color: var(--text-muted);">${custEscape(m.category)}</td>
           <td style="font-weight: 700;">฿${m.price.toLocaleString()}</td>
           <td>${owner ? `<button class="status-badge ${m.available === false ? 'status-calling' : 'status-available'}" onclick="toggleMenuAvailability('${custEscape(m.id)}')">${m.available === false ? 'พักขาย' : 'พร้อมขาย'}</button>` : `<span class="status-badge ${m.available === false ? 'status-calling' : 'status-available'}">${m.available === false ? 'พักขาย' : 'พร้อมขาย'}</span>`}</td>
@@ -4693,6 +4722,10 @@
       document.getElementById('menu-price-input').value = '60';
       document.getElementById('menu-noodle-option-input').value = '';
       menuModalNoodleOptions = [];
+      menuModalAddons = [];
+      document.getElementById('menu-addon-name-input').value = '';
+      document.getElementById('menu-addon-price-input').value = '10';
+      renderMenuAddons();
       toggleNoodleOptionsEditor();
       document.getElementById('menu-modal').classList.add('open');
     }
@@ -4711,6 +4744,10 @@
       document.getElementById('menu-price-input').value = Number(menu.price) || 0;
       document.getElementById('menu-noodle-option-input').value = '';
       menuModalNoodleOptions = JSON.parse(JSON.stringify(menu.noodleOptions || (isNoodleMenu(menu) ? DEFAULT_NOODLE_OPTIONS : [])));
+      menuModalAddons = JSON.parse(JSON.stringify(menu.addons || []));
+      document.getElementById('menu-addon-name-input').value = '';
+      document.getElementById('menu-addon-price-input').value = '10';
+      renderMenuAddons();
       toggleNoodleOptionsEditor();
       document.getElementById('menu-modal').classList.add('open');
     }
@@ -4768,6 +4805,64 @@
       renderMenuNoodleOptions();
     }
 
+    function renderMenuAddons() {
+      const host = document.getElementById('menu-addons-list');
+      if (!host) return;
+      host.innerHTML = menuModalAddons.length ? menuModalAddons.map((addon, index) => `
+        <div class="menu-addon-row">
+          <span class="menu-addon-name">${custEscape(addon.name)} <small>+฿${Number(addon.price || 0).toLocaleString('th-TH')}</small></span>
+          <button type="button" class="status-badge ${addon.available === false ? 'status-calling' : 'status-available'}" onclick="toggleMenuAddon(${index})">${addon.available === false ? 'ไม่พร้อม' : 'พร้อม'}</button>
+          <button type="button" class="action-icon-btn" aria-label="แก้ไข ${custEscape(addon.name)}" onclick="editMenuAddon(${index})">✏️</button>
+          <button type="button" class="action-icon-btn" style="color:#ef4444" aria-label="ลบ ${custEscape(addon.name)}" onclick="deleteMenuAddon(${index})">🗑️</button>
+        </div>`).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:12px">ยังไม่มีท็อปปิ้งของเมนูนี้</div>';
+    }
+
+    function addMenuAddon(name, price) {
+      const nameInput = document.getElementById('menu-addon-name-input');
+      const priceInput = document.getElementById('menu-addon-price-input');
+      const addonName = String(name || nameInput.value || '').trim();
+      const addonPrice = Number(price === undefined ? priceInput.value : price);
+      if (!addonName) { nameInput.focus(); return; }
+      if (!Number.isFinite(addonPrice) || addonPrice < 0) return showToast('กรุณาใส่ราคาท็อปปิ้งตั้งแต่ 0 บาทขึ้นไป');
+      if (menuModalAddons.some(addon => addon.name.toLocaleLowerCase() === addonName.toLocaleLowerCase())) return showToast('มีท็อปปิ้งนี้ในเมนูแล้ว');
+      menuModalAddons.push({ id: `addon_${Date.now()}_${menuModalAddons.length}`, name: addonName, price: addonPrice, available: true });
+      nameInput.value = '';
+      if (price !== undefined) priceInput.value = '10';
+      renderMenuAddons();
+    }
+
+    function addMenuAddonPreset(name, price) {
+      addMenuAddon(name, price);
+    }
+
+    function toggleMenuAddon(index) {
+      if (!menuModalAddons[index]) return;
+      menuModalAddons[index].available = menuModalAddons[index].available === false;
+      renderMenuAddons();
+    }
+
+    function editMenuAddon(index) {
+      const addon = menuModalAddons[index];
+      if (!addon) return;
+      const name = prompt('แก้ไขชื่อท็อปปิ้ง:', addon.name);
+      if (name === null) return;
+      if (!name.trim()) return showToast('กรุณาระบุชื่อท็อปปิ้ง');
+      const priceText = prompt('ตั้งราคาท็อปปิ้ง (บาท):', String(addon.price));
+      if (priceText === null) return;
+      const price = Number(priceText);
+      if (!Number.isFinite(price) || price < 0) return showToast('กรุณาใส่ราคาตั้งแต่ 0 บาทขึ้นไป');
+      if (menuModalAddons.some((other, at) => at !== index && other.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase())) return showToast('มีท็อปปิ้งชื่อนี้แล้ว');
+      addon.name = name.trim(); addon.price = price;
+      renderMenuAddons();
+    }
+
+    function deleteMenuAddon(index) {
+      const addon = menuModalAddons[index];
+      if (!addon || !confirm(`ลบท็อปปิ้ง “${addon.name}” ใช่หรือไม่?`)) return;
+      menuModalAddons.splice(index, 1);
+      renderMenuAddons();
+    }
+
     function closeMenuModal() {
       document.getElementById('menu-modal').classList.remove('open');
       editingMenuId = null;
@@ -4790,6 +4885,7 @@
         category: cat,
         price: price,
         available: editingMenuId ? (menuItems.find(menu => String(menu.id) === editingMenuId)?.available !== false) : true,
+        addons: menuModalAddons.map(addon => ({ ...addon })),
         ...(isNoodleMenu({ category: cat }) ? { noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })) } : {})
       };
       const next = editingMenuId ? menuItems.map(menu => String(menu.id) === editingMenuId ? item : menu) : [...menuItems, item];
@@ -5828,8 +5924,9 @@
     });
 
     // ── CUSTOMER ORDER PAGE FUNCTIONS ──
-    let custCart = [];       // [{id, name, price, qty, noodleChoice?}]
+    let custCart = [];       // [{id, name, price, qty, noodleChoice?, addons?}]
     let custNoodleSelections = {};
+    let custAddonSelections = {};
     let custTableNumber = '';
 
     const MENU_EMOJI = {
@@ -5844,6 +5941,7 @@
       custTableNumber = String(tableNum || '').trim();
       custCart = [];
       custNoodleSelections = {};
+      custAddonSelections = {};
       document.body.classList.add('customer-order-mode');
       document.getElementById('sidebar').style.display = 'none';
       document.getElementById('main-wrapper').style.display = 'none';
@@ -5882,22 +5980,36 @@
         const options = availableNoodleOptions(item);
         const selected = custNoodleSelections[id] || options[0]?.id || '';
         const noodleSelect = isNoodleMenu(item) ? `<label class="cust-noodle-picker"><span>เลือกเส้น</span><select id="cust-noodle-${custEscape(id)}" onchange="custSetNoodleChoice('${custEscape(id)}',this.value)">${options.map(option => `<option value="${custEscape(option.id)}" ${String(option.id) === String(selected) ? 'selected' : ''}>${custEscape(option.name)}</option>`).join('')}</select></label>` : '';
-        return `<div class="cust-menu-row"><div class="cust-menu-info"><div class="cust-menu-name">${custEscape(item.name)}</div><div class="cust-menu-category">${custEscape(item.category)}</div>${noodleSelect}<div class="cust-menu-price">${custMoney(item.price)}</div></div><div class="cust-qty"><button aria-label="ลด ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,-1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">−</button><span>${qty}</span><button aria-label="เพิ่ม ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">+</button></div></div>`;
+        const availableAddons = (item.addons || []).filter(addon => addon.available !== false);
+        const selectedAddons = custAddonSelections[id] || [];
+        const addonsPicker = availableAddons.length ? `<div class="cust-addon-picker"><strong>เพิ่มท็อปปิ้ง</strong>${availableAddons.map(addon => `<label><input type="checkbox" value="${custEscape(addon.id)}" ${selectedAddons.includes(String(addon.id)) ? 'checked' : ''} onchange="custSetAddonChoice('${custEscape(id)}')"> ${custEscape(addon.name)} <span>+฿${Number(addon.price || 0).toLocaleString('th-TH')}</span></label>`).join('')}</div>` : '';
+        return `<div class="cust-menu-row"><div class="cust-menu-info"><div class="cust-menu-name">${custEscape(item.name)}</div><div class="cust-menu-category">${custEscape(item.category)}</div>${noodleSelect}${addonsPicker}<div class="cust-menu-price">เริ่ม ${custMoney(item.price)}</div></div><div class="cust-qty"><button aria-label="ลด ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,-1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">−</button><span>${qty}</span><button aria-label="เพิ่ม ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">+</button></div></div>`;
       }).join('');
     }
     function custAddToCart(menuId) { custChangeQty(menuId, 1); }
     function custSetNoodleChoice(menuId, choiceId) { custNoodleSelections[String(menuId)] = String(choiceId || ''); }
+    function custSetAddonChoice(menuId) {
+      const id = String(menuId);
+      custAddonSelections[id] = Array.from(document.querySelectorAll(`.cust-addon-picker input[type="checkbox"]`))
+        .filter(input => input.checked && input.closest('.cust-menu-row')?.querySelector('.cust-qty button')?.dataset.id === id)
+        .map(input => String(input.value));
+      custUpdateCartBar();
+    }
     function custChangeQty(menuId, delta, selectedChoiceId) {
       const item = menuItems.find(entry => String(entry.id) === String(menuId) && isMenuAvailableForOrdering(entry));
       if (!item) return;
       const options = availableNoodleOptions(item);
       const choiceId = isNoodleMenu(item) ? String(selectedChoiceId || custNoodleSelections[String(menuId)] || options[0]?.id || '') : '';
       if (isNoodleMenu(item) && !choiceId) return showToast('เมนูนี้ไม่มีเส้นที่พร้อมจำหน่าย');
-      const existing = custCart.find(entry => String(entry.id) === String(menuId) && String(entry.noodleChoice?.id || '') === choiceId);
+      const selectedAddonIds = custAddonSelections[String(menuId)] || [];
+      const addons = (item.addons || []).filter(addon => addon.available !== false && selectedAddonIds.includes(String(addon.id))).map(addon => ({ id: String(addon.id), name: addon.name, price: Number(addon.price) || 0 }));
+      const addonKey = addons.map(addon => addon.id).sort().join(',');
+      const existing = custCart.find(entry => String(entry.id) === String(menuId) && String(entry.noodleChoice?.id || '') === choiceId && (entry.addons || []).map(addon => String(addon.id)).sort().join(',') === addonKey);
       if (existing) { existing.qty += delta; if (existing.qty <= 0) custCart = custCart.filter(entry => entry !== existing); }
       else if (delta > 0) {
         const noodleChoice = options.find(option => String(option.id) === choiceId);
-        custCart.push({ id: item.id, name: item.name, price: Number(item.price) || 0, qty: delta, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
+        const basePrice = Number(item.price) || 0;
+        custCart.push({ id: item.id, name: item.name, basePrice, price: basePrice + addons.reduce((sum, addon) => sum + addon.price, 0), addons, qty: delta, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
       }
       custRenderMenu(document.querySelector('.cust-cat-pill.active')?.dataset.category || 'ทั้งหมด');
       custUpdateCartBar();
@@ -5920,7 +6032,7 @@
       const t = tables.find(tb => String(tb.number) === custTableNumber);
       button.disabled = true; button.textContent = 'กำลังส่งออเดอร์...'; feedback.style.display = 'none';
       try {
-        const saved = await tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: custCart.map(item => ({ menuId: String(item.id), qty: item.qty, ...(item.noodleChoice ? { noodleChoice: item.noodleChoice } : {}) })), note, source: 'customer_link', guestCount } });
+        const saved = await tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: custCart.map(item => ({ menuId: String(item.id), addonIds: (item.addons || []).map(addon => String(addon.id)), qty: item.qty, ...(item.noodleChoice ? { noodleChoice: item.noodleChoice } : {}) })), note, source: 'customer_link', guestCount } });
         const normalized = { id: saved.id, tableId: t ? t.id : 'unknown', tableNumber: custTableNumber, items: saved.items || custCart.map(item => ({ ...item })), note: saved.note || note, source: 'customer_link', guestCount: Number(saved.guest_count) || guestCount, total: Number(saved.total) || 0, status: saved.status || 'pending', created_at: saved.created_at, createdAt: saved.created_at ? new Date(saved.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) };
         if (!orders.some(order => String(order.id) === String(normalized.id))) orders.unshift(normalized);
         if (t) { t.status = 'occupied'; t.callNote = 'ลูกค้าส่งออเดอร์จาก QR'; t.callTime = normalized.createdAt; }
@@ -5933,7 +6045,7 @@
         document.getElementById('cust-menu-grid').parentElement.style.display = 'none';
         document.getElementById('cust-cat-scroll').style.display = 'none';
         const success = document.getElementById('cust-success-msg');
-        success.innerHTML = `<strong>✅ รับออเดอร์แล้ว</strong><div class="cust-success-meta">โต๊ะ ${custEscape(custTableNumber)} • เลขออเดอร์ ${custEscape(normalized.id)}</div><div class="cust-success-items">${normalized.items.map(item => `<div>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''} × ${Number(item.qty) || 0}<strong>${custMoney((Number(item.price) || 0) * (Number(item.qty) || 0))}</strong></div>`).join('')}</div><p>รวม ${custMoney(normalized.total)}</p><small>พนักงานได้รับรายการแล้ว ขอบคุณค่ะ</small>`;
+        success.innerHTML = `<strong>✅ รับออเดอร์แล้ว</strong><div class="cust-success-meta">โต๊ะ ${custEscape(custTableNumber)} • เลขออเดอร์ ${custEscape(normalized.id)}</div><div class="cust-success-items">${normalized.items.map(item => `<div>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${(item.addons || []).length ? `<small> + ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}<strong>${custMoney((Number(item.price) || 0) * (Number(item.qty) || 0))}</strong></div>`).join('')}</div><p>รวม ${custMoney(normalized.total)}</p><small>พนักงานได้รับรายการแล้ว ขอบคุณค่ะ</small>`;
         success.style.display = 'block';
         document.getElementById('cust-cart-bar').style.display = 'none';
         custCart = [];
