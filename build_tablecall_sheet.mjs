@@ -42,7 +42,7 @@ const sheetConfigs = [
   { name: 'POS_Tables', headers: ['number', 'zone', 'seats', 'active', 'updated_at'], rows: tables, table: 'POSTables' },
   { name: 'POSOrders', headers: ['id', 'table_number', 'items_json', 'note', 'total', 'status', 'created_at'], rows: [] },
   { name: 'POSState', headers: ['key', 'state_json', 'updated_at'], rows: [] },
-  { name: 'Employees', headers: ['employee_id', 'name', 'role', 'employment_type', 'pin_salt', 'pin_hash', 'is_active', 'created_at', 'updated_at'], rows: [] },
+  { name: 'Employees', headers: ['employee_id', 'name', 'role', 'position', 'employment_type', 'pin_salt', 'pin_hash', 'is_active', 'created_at', 'updated_at'], rows: [] },
   { name: 'Attendance', headers: ['id', 'employee_id', 'employee_name', 'work_date', 'clock_in', 'clock_out', 'status', 'updated_at'], rows: [] },
   { name: 'Tables', headers: ['id', 'number', 'seats', 'qr_token', 'is_active', 'sort_order', 'created_at', 'updated_at'], rows: [] },
   { name: 'Requests', headers: ['id', 'table_id', 'table_number', 'type', 'status', 'created_at', 'handled_at', 'handled_by', 'note'], rows: [] },

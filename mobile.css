@@ -1,6 +1,11 @@
 /* Responsive layout for the staff/admin POS only.
    Loaded only at tablet/mobile widths; the customer ordering page is intentionally excluded. */
 @media screen and (max-width: 1100px) {
+  body:not(.customer-order-mode) #view-menu #categories-chips .action-icon-btn,
+  body:not(.customer-order-mode) #menu-noodle-options-list .action-icon-btn,
+  body:not(.customer-order-mode) #menu-noodle-options-list .status-badge { min-width: 42px; min-height: 42px; }
+  body:not(.customer-order-mode) #view-menu .card-header-flex > .btn-primary { min-height: 44px; }
+  body:not(.customer-order-mode) #menu-noodle-option-input + button { min-height: 42px; }
   body:not(.customer-order-mode) #floor-mobile-tools { display: block !important; margin: 0 0 12px; }
   body:not(.customer-order-mode) .floor-mobile-search {
     display: flex; align-items: center; gap: 9px; min-height: 52px; padding: 4px 5px 4px 12px;
