@@ -3029,7 +3029,7 @@
         };
         const timer = setTimeout(() => finish(new Error('Apps Script ไม่ตอบกลับภายในเวลาที่กำหนด')), 20000);
         window[callbackName] = result => finish(null, result);
-        script.onerror = () => finish(new Error('เบราว์เซอร์เปิด Apps Script ไม่ได้ ตรวจสอบว่าใช้ Web app URL ชุดเดียวกัน และ Deploy เป็น Execute as: Me / Who has access: Anyone'));
+        script.onerror = () => finish(new Error('เครื่องนี้โหลด Apps Script ไม่สำเร็จ: เปิด Web app URL ลงท้าย /exec ในแท็บใหม่เพื่อตรวจสอบ ถ้าไม่เห็นข้อความ API is running ให้ Deploy เป็น Execute as: Me / Who has access: Anyone; ถ้าเห็นข้อความดังกล่าว ให้ปิดส่วนขยายบล็อกโฆษณา/ความเป็นส่วนตัวหรืออนุญาต script.google.com และ script.googleusercontent.com แล้วรีเฟรชแบบ Ctrl+F5'));
         const encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify({ action, ...payload })))).replace(/\+/g, '-').replace(/\//g, '_');
         const params = new URLSearchParams({ payload: encodedPayload, encoding: 'base64', callback: callbackName, _: String(Date.now()) });
         script.src = `${TABLECALL_APPS_SCRIPT_URL}?${params.toString()}`;
