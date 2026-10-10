@@ -2921,6 +2921,56 @@
       { rank: '#28', name: 'เกี๊ยวกุ้ง', category: 'หมูกระทะ-ชาบู', sold: 45, avgPrice: '฿0.00', total: '฿0.00' }
     ];
 
+    // ── Apps Script bridge (shared menu, customer orders and calls) ──
+    const TABLECALL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyer9oSzQqEQCql0oUK5Ew6qLbKEoVlq_hvNiLVav-hwdsuYRjASvgPM9kh01TOd0KX/exec';
+    const TABLECALL_IS_CUSTOMER = new URLSearchParams(window.location.search).get('view') === 'customer' || new URLSearchParams(window.location.search).has('table');
+    let remotePOSAvailable = false;
+    let posStateSaveTimer = null;
+
+    function tableCallGas(action, payload = {}, needsAdmin = false) {
+      if (!TABLECALL_APPS_SCRIPT_URL) return Promise.reject(new Error('ยังไม่ได้ตั้งค่า Apps Script URL'));
+      if (needsAdmin) {
+        let key = sessionStorage.getItem('tablecall_apps_script_admin_key');
+        if (!key) {
+          key = prompt('กรอกรหัสผู้ดูแล Apps Script (ADMIN_KEY)');
+          if (!key) return Promise.reject(new Error('ยกเลิกการทำรายการ'));
+          sessionStorage.setItem('tablecall_apps_script_admin_key', key);
+        }
+        payload = { ...payload, adminKey: key };
+      }
+      const callbackName = `tableCall_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        const finish = (error, result) => {
+          clearTimeout(timer);
+          delete window[callbackName];
+          script.remove();
+          if (error) return reject(error);
+          if (result && result.error) {
+            if (String(result.error).includes('รหัสผู้ดูแล')) sessionStorage.removeItem('tablecall_apps_script_admin_key');
+            return reject(new Error(result.error));
+          }
+          resolve(result);
+        };
+        const timer = setTimeout(() => finish(new Error('Apps Script ไม่ตอบกลับภายในเวลาที่กำหนด')), 20000);
+        window[callbackName] = result => finish(null, result);
+        script.onerror = () => finish(new Error('เชื่อมต่อ Apps Script ไม่ได้ ตรวจสอบการ Deploy เป็น Web app และสิทธิ์ Anyone'));
+        const encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify({ action, ...payload })))).replace(/\+/g, '-').replace(/\//g, '_');
+        const params = new URLSearchParams({ payload: encodedPayload, encoding: 'base64', callback: callbackName, _: String(Date.now()) });
+        script.src = `${TABLECALL_APPS_SCRIPT_URL}?${params.toString()}`;
+        document.head.appendChild(script);
+      });
+    }
+
+    function schedulePOSStateSave() {
+      if (TABLECALL_IS_CUSTOMER || !TABLECALL_APPS_SCRIPT_URL) return;
+      clearTimeout(posStateSaveTimer);
+      posStateSaveTimer = setTimeout(() => {
+        tableCallGas('savePOSState', { state: { tables, menuItems, settings: storeSettings } }, true)
+          .catch(err => showToast(`⚠️ ซิงก์เมนูไม่สำเร็จ: ${err.message}`));
+      }, 700);
+    }
+
     // ── 14. LOCAL STORAGE STATE ENGINE ──
     let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
     let menuItems = JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG;
@@ -2962,7 +3012,7 @@
       };
     }
 
-    function saveState(broadcastAction = null, broadcastData = null) {
+    function saveState(broadcastAction = null, broadcastData = null, skipRemote = false) {
       localStorage.setItem('pos_tables', JSON.stringify(tables));
       localStorage.setItem('pos_menu', JSON.stringify(menuItems));
       localStorage.setItem('pos_orders', JSON.stringify(orders));
@@ -2979,6 +3029,7 @@
       if (syncChannel && broadcastAction) {
         syncChannel.postMessage({ action: broadcastAction, ...broadcastData });
       }
+      if (!skipRemote) schedulePOSStateSave();
     }
 
     function reloadFromStorage() {
@@ -4571,8 +4622,66 @@
       renderKds();
     }
 
+    function applyPOSState(state) {
+      if (!state) return;
+      if (Array.isArray(state.tables)) tables = state.tables;
+      if (Array.isArray(state.menuItems)) menuItems = state.menuItems;
+      if (state.settings && typeof state.settings === 'object') storeSettings = { ...storeSettings, ...state.settings };
+      localStorage.setItem('pos_tables', JSON.stringify(tables));
+      localStorage.setItem('pos_menu', JSON.stringify(menuItems));
+      localStorage.setItem('pos_settings', JSON.stringify(storeSettings));
+    }
+
+    async function pollPOSOrders() {
+      if (TABLECALL_IS_CUSTOMER || !remotePOSAvailable) return;
+      try {
+        const remoteOrders = await tableCallGas('listPOSOrders');
+        const newOrders = (remoteOrders || []).filter(order => !orders.some(existing => String(existing.id) === String(order.id)));
+        if (!newOrders.length) return;
+        for (const order of newOrders.reverse()) {
+          const table = tables.find(item => String(item.number) === String(order.table_number));
+          orders.unshift({
+            id: order.id,
+            tableId: table ? table.id : 'unknown',
+            tableNumber: order.table_number,
+            items: order.items || [],
+            note: order.note || '',
+            total: Number(order.total) || 0,
+            status: order.status || 'open',
+            createdAt: new Date(order.created_at).toLocaleTimeString('th-TH'),
+          });
+          if (table) {
+            table.status = 'calling';
+            table.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
+            table.callTime = new Date(order.created_at).toLocaleTimeString('th-TH');
+          }
+        }
+        saveState(null, null, true);
+        renderAllViews();
+        playChimeSound('calling');
+        showToast(`🔔 มีออเดอร์ใหม่จากลูกค้า ${newOrders.length} รายการ`);
+      } catch (err) { console.error('Apps Script order poll failed', err); }
+    }
+
     // ── 21. APP INITIALIZATION ──
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const tableParam = params.get('table');
+      const viewParam = params.get('view');
+      const customerView = viewParam === 'customer' || !!tableParam;
+
+      try {
+        const remoteState = await tableCallGas('getPOSState');
+        remotePOSAvailable = true;
+        if (remoteState) applyPOSState(remoteState);
+        else if (!customerView) {
+          await tableCallGas('savePOSState', { state: { tables, menuItems, settings: storeSettings } }, true);
+        }
+      } catch (err) {
+        remotePOSAvailable = false;
+        console.error('Apps Script connection failed', err);
+      }
+
       // Check if store settings have custom name
       if (storeSettings && storeSettings.name) {
         document.getElementById('sidebar-brand-text').textContent = storeSettings.name;
@@ -4586,12 +4695,16 @@
       renderAllViews();
 
       // ── Check URL params: if ?table=X&view=customer → launch Customer Order Page ──
-      const params = new URLSearchParams(window.location.search);
-      const tableParam = params.get('table');
-      const viewParam = params.get('view');
-
-      if (viewParam === 'customer' || tableParam) {
+      if (customerView) {
         launchCustomerOrderPage(tableParam || '');
+        if (!remotePOSAvailable) {
+          const feedback = document.getElementById('cust-call-feedback');
+          feedback.style.display = 'block';
+          feedback.textContent = 'เชื่อมต่อระบบร้านไม่ได้ กรุณาแจ้งพนักงาน';
+        }
+      } else if (remotePOSAvailable) {
+        setInterval(pollPOSOrders, 6000);
+        pollPOSOrders();
       }
     });
 
@@ -4754,23 +4867,32 @@
         status: 'open',
         createdAt: new Date().toLocaleTimeString('th-TH')
       };
-      orders.unshift(newOrder);
+      const finishOrder = () => {
+        orders.unshift(newOrder);
+        if (t) {
+          t.status = t.status === 'idle' ? 'calling' : t.status;
+          t.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
+          t.callTime = new Date().toLocaleTimeString('th-TH');
+        }
+        saveState('CALL', { table: custTableNumber, type: 'calling', note: 'ลูกค้าส่งออเดอร์จาก QR' });
+        playChimeSound('calling');
+        document.getElementById('cust-success-msg').style.display = 'block';
+        document.getElementById('cust-send-order-btn').style.display = 'none';
+        custCart = [];
+        custUpdateCartBar();
+      };
 
-      // Mark table as calling so staff sees it
-      if (t) {
-        t.status = t.status === 'idle' ? 'calling' : t.status;
-        t.callNote = 'ลูกค้าส่งออเดอร์จาก QR';
-        t.callTime = new Date().toLocaleTimeString('th-TH');
-      }
-
-      saveState('CALL', { table: custTableNumber, type: 'calling', note: 'ลูกค้าส่งออเดอร์จาก QR' });
-      playChimeSound('calling');
-
-      // Show success state
-      document.getElementById('cust-success-msg').style.display = 'block';
-      document.getElementById('cust-send-order-btn').style.display = 'none';
-      custCart = [];
-      custUpdateCartBar();
+      const submitButton = document.getElementById('cust-send-order-btn');
+      submitButton.disabled = true;
+      submitButton.textContent = 'กำลังส่งออเดอร์...';
+      tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: newOrder.items, note, total: newOrder.total } })
+        .then(saved => { newOrder.id = saved.id; finishOrder(); })
+        .catch(err => {
+          const feedback = document.getElementById('cust-call-feedback');
+          feedback.style.display = 'block';
+          feedback.textContent = `ส่งออเดอร์ไม่สำเร็จ: ${err.message}`;
+        })
+        .finally(() => { submitButton.disabled = false; submitButton.textContent = '📨 ส่งออเดอร์'; });
     }
 
     function custCallStaff(type, note) {
@@ -4780,16 +4902,20 @@
         t.callNote = note;
         t.callTime = new Date().toLocaleTimeString('th-TH');
       }
-      playChimeSound(type === 'request_bill' ? 'bill' : 'calling');
-      saveState('CALL', { table: custTableNumber, type: type === 'request_bill' ? 'bill' : 'calling', note });
-
       const fb = document.getElementById('cust-call-feedback');
-      fb.style.display = 'block';
-      fb.innerHTML = type === 'request_bill'
-        ? '💳 แจ้งขอเช็คบิลแล้ว! พนักงานกำลังมา'
-        : `🔔 ส่งสัญญาณเรียกแล้ว: ${note}`;
-      clearTimeout(fb._timer);
-      fb._timer = setTimeout(() => { fb.style.display = 'none'; }, 5000);
+      tableCallGas('customerCall', { tableNumber: custTableNumber, kind: type, note })
+        .then(() => {
+          playChimeSound(type === 'request_bill' ? 'bill' : 'calling');
+          saveState('CALL', { table: custTableNumber, type: type === 'request_bill' ? 'bill' : 'calling', note });
+          fb.style.display = 'block';
+          fb.innerHTML = type === 'request_bill' ? '💳 แจ้งขอเช็คบิลแล้ว! พนักงานกำลังมา' : `🔔 ส่งสัญญาณเรียกแล้ว: ${note}`;
+          clearTimeout(fb._timer);
+          fb._timer = setTimeout(() => { fb.style.display = 'none'; }, 5000);
+        })
+        .catch(err => {
+          fb.style.display = 'block';
+          fb.textContent = `ส่งคำขอไม่สำเร็จ: ${err.message}`;
+        });
     }
   </script>
 </body>
