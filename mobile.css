@@ -33,6 +33,8 @@
   }
   body:not(.customer-order-mode) .manage-zone-chip.active { border-color: #4f46e5; background: #4f46e5; color: #fff; }
   body:not(.customer-order-mode) #manage-table-results { margin-top: 6px; color: var(--text-muted); font-size: 12px; }
+  body:not(.customer-order-mode) .receipt-buttons { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  body:not(.customer-order-mode) .receipt-buttons button { width: 100%; min-height: 46px; justify-content: center; }
   body:not(.customer-order-mode) .manage-table-card {
     display: grid; grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "top qr" "actions actions";
     align-items: center; gap: 10px; min-height: 0; cursor: default !important;
@@ -100,7 +102,7 @@
   }
   body:not(.customer-order-mode) .manage-table-search input {
     flex: 1; width: 100%; min-width: 0; min-height: 40px; padding: 0; border: 0; outline: 0;
-    background: transparent; color: var(--text-color); font: inherit; font-size: 14px;
+    background: transparent; color: var(--text-main); font: inherit; font-size: 14px;
   }
   body:not(.customer-order-mode) .manage-table-search input::-webkit-search-cancel-button { display: none; }
   body:not(.customer-order-mode) .manage-table-search button {
