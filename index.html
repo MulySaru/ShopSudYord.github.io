@@ -1499,7 +1499,7 @@
 
       <div class="header-right">
         <!-- 1-Click Reset to 0 Button -->
-        <button class="btn-reset-db" onclick="resetDatabaseToZero()" title="ล้างยอดขาย ออเดอร์ คำขอเรียก เป็น 0 ใหม่สำหรับเปิดร้านจริง">
+        <button class="btn-reset-db" data-owner-only="true" onclick="resetDatabaseToZero()" title="ล้างยอดขาย ออเดอร์ คำขอเรียก เป็น 0 ใหม่สำหรับเปิดร้านจริง">
           🔄 ล้างฐานข้อมูลเป็น 0
         </button>
         <button class="btn-header-action" style="color: #4338ca;" onclick="loadDemoSampleData()" title="โหลดข้อมูลตัวอย่างจากรูปภาพ">
@@ -2297,7 +2297,7 @@
             ระบบทำงานแบบ Client-Side Standalone บน GitHub Pages ข้อมูลจะถูกเก็บใน Browser LocalStorage ปลอดภัย 100% ไม่ต้องต่อ Docker หรือ Server
           </p>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <button class="btn-reset-db" style="padding: 10px 16px; font-size: 13px;" onclick="resetDatabaseToZero()">
+            <button class="btn-reset-db" data-owner-only="true" style="padding: 10px 16px; font-size: 13px;" onclick="resetDatabaseToZero()">
               🔄 รีเซ็ตฐานข้อมูลทั้งหมดเป็น 0 (Clean Start สำหรับเปิดร้านจริง)
             </button>
             <button class="btn-primary" onclick="loadDemoSampleData()">
@@ -3346,6 +3346,7 @@
 
     // ── 15. RESET TO 0 (CLEAN SLATE) & LOAD DEMO ──
     function resetDatabaseToZero() {
+      if (!isStoreOwner()) { showToast('เฉพาะเจ้าของร้านเท่านั้นที่ล้างฐานข้อมูลได้'); return; }
       if (!confirm('ยืนยันการรีเซ็ตฐานข้อมูลทั้งหมดเป็น 0 หรือไม่?\n(ยอดขาย ออเดอร์ คิวครัว คำขอเรียกพนักงาน จะถูกรีเซ็ตเป็น 0 เพื่อเริ่มใช้งานจริง)')) return;
 
       tables = getInitialTables();
