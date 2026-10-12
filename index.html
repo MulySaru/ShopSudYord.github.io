@@ -3345,23 +3345,27 @@
     }
 
     // ── 15. RESET TO 0 (CLEAN SLATE) & LOAD DEMO ──
-    function resetDatabaseToZero() {
+    async function resetDatabaseToZero() {
       if (!isStoreOwner()) { showToast('เฉพาะเจ้าของร้านเท่านั้นที่ล้างฐานข้อมูลได้'); return; }
-      if (!confirm('ยืนยันการรีเซ็ตฐานข้อมูลทั้งหมดเป็น 0 หรือไม่?\n(ยอดขาย ออเดอร์ คิวครัว คำขอเรียกพนักงาน จะถูกรีเซ็ตเป็น 0 เพื่อเริ่มใช้งานจริง)')) return;
-
-      tables = getInitialTables();
-      orders = [];
-      expensesList = [];
-      attendanceList = [];
-      members = [];
-      promotions = [];
-      stockList = [];
-      suppliersList = [];
-      poList = [];
-
-      saveState('SYNC');
-      renderAllViews();
-      showToast('🔄 ฐานข้อมูลถูกรีเซ็ตเป็น 0 เรียบร้อยแล้ว (พร้อมเปิดร้านจริง)');
+      if (!confirm('ยืนยันล้างข้อมูลการขายและข้อมูลปฏิบัติงานทั้งหมดหรือไม่?\n\nจะลบบิล/ออเดอร์ คำขอเรียกพนักงาน ความเห็นลูกค้า ประวัติลงเวลา สมาชิก โปรโมชั่น สต็อก ค่าใช้จ่าย และใบสั่งซื้อ ทั้งจาก Google Sheets และเครื่องนี้\n\nจะเก็บเมนู โต๊ะ บัญชีพนักงาน และการตั้งค่าร้านไว้')) return;
+      try {
+        await tableCallGasPost('resetPOSData', {}, true);
+        tables = tables.map(table => ({ ...table, status: 'idle', callNote: '', callTime: null }));
+        orders = [];
+        expensesList = [];
+        attendanceList = [];
+        members = [];
+        promotions = [];
+        stockList = [];
+        suppliersList = [];
+        poList = [];
+        saveState('SYNC', null, true);
+        renderAllViews();
+        if (typeof refreshEmployeeData === 'function') await refreshEmployeeData();
+        showToast('🔄 ข้อมูลธุรกรรมถูกล้างจาก Google Sheets แล้ว และซิงก์ไปยังเครื่องนี้เรียบร้อย');
+      } catch (err) {
+        showToast(`ล้างข้อมูลไม่สำเร็จ: ${explainAppsScriptError(err)}`);
+      }
     }
 
     function loadDemoSampleData() {
@@ -5931,6 +5935,12 @@
         const rows = remoteOrders || [];
         const knownIds = new Set(orders.map(order => String(order.id)));
         const newOrders = rows.filter(order => !knownIds.has(String(order.id)));
+        if (!rows.length && orders.length) {
+          orders = [];
+          saveState(null, null, true);
+          renderAllViews();
+          return;
+        }
         rows.forEach(remote => {
           const index = orders.findIndex(existing => String(existing.id) === String(remote.id));
           const table = tables.find(item => String(item.number) === String(remote.table_number));
