@@ -665,6 +665,67 @@
       display: flex;
     }
 
+    .reset-data-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, .62);
+      backdrop-filter: blur(3px);
+    }
+    .reset-data-backdrop.open { display: flex; }
+    .reset-data-dialog {
+      width: min(560px, 100%);
+      max-height: min(88vh, 760px);
+      overflow: auto;
+      padding: 22px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 22px 70px rgba(15, 23, 42, .28);
+    }
+    .reset-data-dialog h2 { margin: 0 0 6px; font-size: 21px; color: #172033; }
+    .reset-data-dialog p { margin: 0 0 16px; color: #64748b; font-size: 13px; line-height: 1.6; }
+    .reset-data-all {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid #fca5a5;
+      border-radius: 12px;
+      background: #fff7f7;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .reset-data-options { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .reset-data-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      min-height: 62px;
+      padding: 12px;
+      border: 1px solid #dbe3ef;
+      border-radius: 11px;
+      color: #334155;
+      cursor: pointer;
+    }
+    .reset-data-option input, .reset-data-all input { margin: 3px 0 0; width: 17px; height: 17px; accent-color: #4f46e5; flex: 0 0 auto; }
+    .reset-data-option small { display: block; margin-top: 3px; color: #64748b; font-size: 11px; font-weight: 400; line-height: 1.4; }
+    .reset-data-warning { margin: 14px 0 !important; padding: 11px 12px; border-radius: 10px; background: #f8fafc; }
+    .reset-data-actions { display: flex; justify-content: flex-end; gap: 9px; }
+    .reset-data-actions button { min-height: 42px; padding: 9px 16px; border-radius: 9px; cursor: pointer; }
+    .reset-data-cancel { background: #fff; border: 1px solid #cbd5e1; color: #334155; }
+    .reset-data-submit { background: #dc2626; border: 1px solid #dc2626; color: #fff; font-weight: 700; }
+    .reset-data-submit:disabled { opacity: .6; cursor: wait; }
+    @media (max-width: 520px) {
+      .reset-data-dialog { padding: 17px; }
+      .reset-data-options { grid-template-columns: 1fr; }
+      .reset-data-option { min-height: 0; }
+    }
+
     .receipt-wrapper {
       display: flex;
       flex-direction: column;
@@ -1499,7 +1560,7 @@
 
       <div class="header-right">
         <!-- 1-Click Reset to 0 Button -->
-        <button class="btn-reset-db" data-owner-only="true" onclick="resetDatabaseToZero()" title="ล้างยอดขาย ออเดอร์ คำขอเรียก เป็น 0 ใหม่สำหรับเปิดร้านจริง">
+        <button class="btn-reset-db" data-owner-only="true" onclick="resetDatabaseToZero()" title="เลือกข้อมูลที่ต้องการล้าง โดยเก็บเมนูไว้">
           🔄 ล้างฐานข้อมูลเป็น 0
         </button>
         <button class="btn-header-action" style="color: #4338ca;" onclick="loadDemoSampleData()" title="โหลดข้อมูลตัวอย่างจากรูปภาพ">
@@ -2319,6 +2380,31 @@
     <footer id="page-footer">
       © <span id="footer-current-year">2026</span> POS All-in-One v1.0.0 · พัฒนาด้วย HTML, CSS และ JavaScript · เชื่อมต่อ Google Apps Script และ Google Sheets
     </footer>
+  </div>
+
+  <div class="reset-data-backdrop" id="reset-data-modal" role="dialog" aria-modal="true" aria-labelledby="reset-data-title" onclick="if(event.target===this)closeResetDataModal()">
+    <div class="reset-data-dialog">
+      <h2 id="reset-data-title">ล้างข้อมูลใน Google Sheets</h2>
+      <p>เลือกข้อมูลที่ต้องการล้าง การล้างจะมีผลกับทุกเครื่องที่เชื่อมกับฐานข้อมูลนี้ และไม่สามารถย้อนกลับได้</p>
+      <label class="reset-data-all">
+        <input id="reset-all-except-menu" type="checkbox" checked onchange="toggleResetAllExceptMenu(this.checked)">
+        <span>ล้างทุกอย่าง ยกเว้นเมนูและหมวดหมู่เมนู<small>รวมข้อมูลทุกหมวดที่แสดงด้านล่าง</small></span>
+      </label>
+      <div class="reset-data-options">
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="orders" checked onchange="syncResetAllCheckbox()"><span><b>บิลและออเดอร์</b><small>ล้างประวัติขายและออเดอร์ทั้งหมด</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="requests" checked onchange="syncResetAllCheckbox()"><span><b>คำขอและความเห็น</b><small>ล้างเรียกพนักงาน ขอเช็คบิล และ Feedback</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="attendance" checked onchange="syncResetAllCheckbox()"><span><b>ประวัติลงเวลา</b><small>ล้างรายการเข้างานและออกงาน</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="staff" checked onchange="syncResetAllCheckbox()"><span><b>บัญชีพนักงาน</b><small>ลบบัญชีพนักงานทั้งหมด แต่คงบัญชีเจ้าของร้านเพื่อให้ล็อกอินได้</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="tables" checked onchange="syncResetAllCheckbox()"><span><b>โต๊ะและ QR Code</b><small>ล้างทั้งรายการโต๊ะ POS และโต๊ะสำหรับ QR</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="operations" checked onchange="syncResetAllCheckbox()"><span><b>ข้อมูลดำเนินงาน</b><small>สมาชิก โปรโมชั่น สต็อก ค่าใช้จ่าย ซัพพลายเออร์ และใบสั่งซื้อ</small></span></label>
+        <label class="reset-data-option"><input class="reset-scope" type="checkbox" value="settings" checked onchange="syncResetAllCheckbox()"><span><b>การตั้งค่าร้าน</b><small>ล้างชื่อร้าน ที่อยู่ เบอร์โทร และข้อมูลรับชำระที่บันทึกใน POSState</small></span></label>
+      </div>
+      <p class="reset-data-warning">เมนูอาหาร ตัวเลือกเส้น ท็อปปิ้ง และหมวดหมู่เมนูจะถูกเก็บไว้เสมอ บัญชีเจ้าของร้านจะไม่ถูกลบเพื่อป้องกันการล็อกอินไม่ได้</p>
+      <div class="reset-data-actions">
+        <button class="reset-data-cancel" type="button" onclick="closeResetDataModal()">ยกเลิก</button>
+        <button class="reset-data-submit" id="reset-data-submit" type="button" onclick="submitResetDataSelection()">ล้างข้อมูลที่เลือก</button>
+      </div>
+    </div>
   </div>
 
   <!-- ── 3. RECEIPT MODAL (IMAGE 1) ── -->
@@ -3347,24 +3433,67 @@
     // ── 15. RESET TO 0 (CLEAN SLATE) & LOAD DEMO ──
     async function resetDatabaseToZero() {
       if (!isStoreOwner()) { showToast('เฉพาะเจ้าของร้านเท่านั้นที่ล้างฐานข้อมูลได้'); return; }
-      if (!confirm('ยืนยันล้างข้อมูลการขายและข้อมูลปฏิบัติงานทั้งหมดหรือไม่?\n\nจะลบบิล/ออเดอร์ คำขอเรียกพนักงาน ความเห็นลูกค้า ประวัติลงเวลา สมาชิก โปรโมชั่น สต็อก ค่าใช้จ่าย และใบสั่งซื้อ ทั้งจาก Google Sheets และเครื่องนี้\n\nจะเก็บเมนู โต๊ะ บัญชีพนักงาน และการตั้งค่าร้านไว้')) return;
+      document.querySelectorAll('.reset-scope').forEach(input => { input.checked = true; });
+      document.getElementById('reset-all-except-menu').checked = true;
+      document.getElementById('reset-data-modal').classList.add('open');
+    }
+
+    function closeResetDataModal() {
+      document.getElementById('reset-data-modal').classList.remove('open');
+    }
+
+    function toggleResetAllExceptMenu(checked) {
+      document.querySelectorAll('.reset-scope').forEach(input => { input.checked = checked; });
+    }
+
+    function syncResetAllCheckbox() {
+      const scopes = [...document.querySelectorAll('.reset-scope')];
+      document.getElementById('reset-all-except-menu').checked = scopes.length > 0 && scopes.every(input => input.checked);
+    }
+
+    async function submitResetDataSelection() {
+      if (!isStoreOwner()) { closeResetDataModal(); showToast('เฉพาะเจ้าของร้านเท่านั้นที่ล้างฐานข้อมูลได้'); return; }
+      const scopes = [...document.querySelectorAll('.reset-scope:checked')].map(input => input.value);
+      if (!scopes.length) { showToast('เลือกรายการข้อมูลที่ต้องการล้างก่อน'); return; }
+      const allExceptMenu = document.getElementById('reset-all-except-menu').checked;
+      const confirmText = allExceptMenu
+        ? 'ยืนยันล้างข้อมูลทุกอย่างในฐานข้อมูล ยกเว้นเมนูและหมวดหมู่เมนู?\n\nจะล้างข้อมูลนี้จาก Google Sheets และทุกเครื่องที่ซิงก์อยู่ บัญชีเจ้าของร้านยังคงอยู่เพื่อให้เข้าสู่ระบบได้'
+        : `ยืนยันล้างข้อมูล ${scopes.length} หมวดที่เลือกจาก Google Sheets และทุกเครื่องที่ซิงก์อยู่?\n\nเมนูจะไม่ถูกล้าง และบัญชีเจ้าของร้านจะคงอยู่`;
+      if (!confirm(confirmText)) return;
+      const submitButton = document.getElementById('reset-data-submit');
+      submitButton.disabled = true;
+      submitButton.textContent = 'กำลังล้างข้อมูล…';
       try {
-        await tableCallGasPost('resetPOSData', {}, true);
-        tables = tables.map(table => ({ ...table, status: 'idle', callNote: '', callTime: null }));
-        orders = [];
-        expensesList = [];
-        attendanceList = [];
-        members = [];
-        promotions = [];
-        stockList = [];
-        suppliersList = [];
-        poList = [];
+        await tableCallGasPost('resetPOSData', { scopes }, true);
+        if (scopes.includes('tables')) tables = [];
+        else tables = tables.map(table => ({ ...table, status: 'idle', callNote: '', callTime: null }));
+        if (scopes.includes('orders')) orders = [];
+        if (scopes.includes('operations')) {
+          members = [];
+          promotions = [];
+          stockList = [];
+          expensesList = [];
+          suppliersList = [];
+          poList = [];
+        }
+        if (scopes.includes('attendance')) attendanceList = [];
+        if (scopes.includes('staff')) staffList = [];
+        if (scopes.includes('settings')) {
+          storeSettings = {};
+          renderStoreSettingsFields();
+        }
         saveState('SYNC', null, true);
         renderAllViews();
-        if (typeof refreshEmployeeData === 'function') await refreshEmployeeData();
-        showToast('🔄 ข้อมูลธุรกรรมถูกล้างจาก Google Sheets แล้ว และซิงก์ไปยังเครื่องนี้เรียบร้อย');
+        if ((scopes.includes('staff') || scopes.includes('attendance')) && typeof refreshEmployeeData === 'function') await refreshEmployeeData();
+        closeResetDataModal();
+        showToast(allExceptMenu
+          ? 'ล้างข้อมูลทุกอย่างแล้ว เมนูและบัญชีเจ้าของร้านยังอยู่'
+          : 'ล้างข้อมูลที่เลือกจาก Google Sheets และเครื่องนี้แล้ว');
       } catch (err) {
         showToast(`ล้างข้อมูลไม่สำเร็จ: ${explainAppsScriptError(err)}`);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'ล้างข้อมูลที่เลือก';
       }
     }
 
@@ -5713,6 +5842,23 @@
       showToast('💾 บันทึกการตั้งค่าร้านและพร้อมเพย์เรียบร้อยแล้ว');
     }
 
+    function renderStoreSettingsFields() {
+      const values = {
+        'setting-store-name': storeSettings.name || '',
+        'setting-store-addr': storeSettings.addr || '',
+        'setting-store-phone': storeSettings.phone || '',
+        'setting-store-tax': storeSettings.tax || '',
+        'setting-store-pp': storeSettings.promptPay || ''
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+      });
+      const brand = document.getElementById('sidebar-brand-text');
+      if (brand) brand.textContent = storeSettings.name || 'ร้านอาหารทดสอบ POS';
+      renderPromptPayQrPreview();
+    }
+
     function renderPromptPayQrPreview() {
       const wrap = document.getElementById('setting-store-pp-qr-preview-wrap');
       const preview = document.getElementById('setting-store-pp-qr-preview');
@@ -5884,7 +6030,10 @@
       if (Array.isArray(state.poList)) poList = state.poList;
       if (Array.isArray(state.staffList)) staffList = state.staffList;
       if (Array.isArray(state.attendanceList)) attendanceList = state.attendanceList;
-      if (state.settings && typeof state.settings === 'object') storeSettings = { ...storeSettings, ...state.settings };
+      if (state.settings && typeof state.settings === 'object') {
+        storeSettings = { ...state.settings };
+        renderStoreSettingsFields();
+      }
       if (state.updated_at) lastPOSStateUpdatedAt = state.updated_at;
       localStorage.setItem('pos_tables', JSON.stringify(tables));
       localStorage.setItem('pos_menu', JSON.stringify(menuItems));
