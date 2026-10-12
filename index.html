@@ -1909,7 +1909,10 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">🍽️ จัดการเมนูอาหาร</div>
-            <button class="btn-primary" data-owner-only="true" onclick="openAddMenuModal()">➕ เพิ่มเมนูอาหาร</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-tbl-action" data-owner-only="true" onclick="loadRongRuaMenu()">📋 ใช้เมนูตามรูป</button>
+              <button class="btn-primary" data-owner-only="true" onclick="openAddMenuModal()">➕ เพิ่มเมนูอาหาร</button>
+            </div>
           </div>
           <div class="data-table-container">
             <table class="data-table" id="menu-items-table">
@@ -2943,28 +2946,47 @@
       ];
     }
 
-    // Default Menu Items (Catalog for Ordering)
+    // Rong Rua menu transcribed from the supplied wall menu and order slips.
+    const RICE_ADDONS = [
+      { id: 'addon_fried_egg', name: 'ไข่ดาว', price: 10, available: true },
+      { id: 'addon_omelet', name: 'ไข่เจียว', price: 15, available: true },
+      { id: 'addon_extra', name: 'พิเศษ', price: 10, available: true }
+    ];
+    const DEFAULT_SOUP_OPTIONS = ['น้ำตกเข้มข้น', 'ต้มยำ', 'น้ำตกต้มยำ', 'น้ำข้น (ไม่มีเลือด)', 'หม่าล่า'].map((name, index) => ({ id: `soup_${index + 1}`, name, available: true }));
     const DEFAULT_CATALOG = [
-      { id: 'm1', name: 'ข้าวกะเพราไก่', category: 'อาหารจานเดียว', price: 60 },
-      { id: 'm2', name: 'ข้าวกะเพราหมู', category: 'อาหารจานเดียว', price: 60 },
-      { id: 'm3', name: 'ข้าวผัดหมู', category: 'อาหารจานเดียว', price: 55 },
-      { id: 'm4', name: 'ข้าวผัดกุ้ง', category: 'อาหารจานเดียว', price: 85 },
-      { id: 'm5', name: 'ผัดไทยกุ้งสด', category: 'ก๋วยเตี๋ยว/เส้น', price: 90 },
-      { id: 'm6', name: 'ก๋วยเตี๋ยวต้มยำหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 55 },
-      { id: 'm7', name: 'ก๋วยเตี๋ยวเย็นตาโฟ', category: 'ก๋วยเตี๋ยว/เส้น', price: 70 },
-      { id: 'm8', name: 'ยำวุ้นเส้นทะเล', category: 'ยำ/น้ำพริก', price: 150 },
-      { id: 'm9', name: 'ส้มตำไทย', category: 'ยำ/น้ำพริก', price: 55 },
-      { id: 'm10', name: 'ปอเปี๊ยะทอด', category: 'ของทอด', price: 60 },
-      { id: 'm11', name: 'ปีกไก่ทอด', category: 'ของทอด', price: 120 },
-      { id: 'm12', name: 'บัวลอย', category: 'ของหวาน', price: 45 },
-      { id: 'm13', name: 'ไอติมกะทิ', category: 'ของหวาน', price: 45 },
-      { id: 'm14', name: 'น้ำเปล่า', category: 'เครื่องดื่ม', price: 15 },
-      { id: 'm15', name: 'โค้ก', category: 'เครื่องดื่ม', price: 25 },
-      { id: 'm16', name: 'ชาเย็น', category: 'เครื่องดื่ม', price: 35 },
-      { id: 'm17', name: 'น้ำมะนาว', category: 'เครื่องดื่ม', price: 35 },
-      { id: 'm18', name: 'เนื้อสไลซ์ (ชาบู)', category: 'หมูกระทะ-ชาบู', price: 99 },
-      { id: 'm19', name: 'หมูสไลซ์ (ชาบู)', category: 'หมูกระทะ-ชาบู', price: 79 },
-      { id: 'm20', name: 'ผักรวม', category: 'ผัก/เห็ด', price: 45 }
+      { id: 'rr_noodle_pork', name: 'ก๋วยเตี๋ยว/เกาเหลาหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 60, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_mixed_pork', name: 'ก๋วยเตี๋ยว/เกาเหลารวมหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_beef', name: 'ก๋วยเตี๋ยว/เกาเหลาเนื้อ', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_signature', name: 'ก๋วยเตี๋ยว/เกาเหลารวมรงค์เรือ (หมู+เนื้อ)', category: 'ก๋วยเตี๋ยว/เส้น', price: 109, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_pork_liver', name: 'ตับหมูลวก', category: 'ลวกจิ้ม', price: 30 },
+      { id: 'rr_stewed_ribs', name: 'ซี่โครงหมูตุ๋น', category: 'ลวกจิ้ม', price: 40 },
+      { id: 'rr_blanch_morning_glory', name: 'ผักบุ้งลวก', category: 'ลวกจิ้ม', price: 10 },
+      { id: 'rr_blanch_pork', name: 'หมูลวก', category: 'ลวกจิ้ม', price: 40 },
+      { id: 'rr_stewed_pork', name: 'หมูตุ๋น', category: 'ลวกจิ้ม', price: 40 },
+      { id: 'rr_stewed_beef', name: 'เนื้อตุ๋น', category: 'ลวกจิ้ม', price: 50 },
+      { id: 'rr_blanch_pork_ball', name: 'ลูกชิ้นหมูลวก', category: 'ลวกจิ้ม', price: 30 },
+      { id: 'rr_blanch_beef_ball', name: 'ลูกชิ้นเนื้อลวก', category: 'ลวกจิ้ม', price: 40 },
+      { id: 'rr_blanch_tendon', name: 'เอ็นแก้วลวก', category: 'ลวกจิ้ม', price: 50 },
+      { id: 'rr_blanch_beef', name: 'เนื้อลวก', category: 'ลวกจิ้ม', price: 50 },
+      { id: 'rr_rice_pork_basil', name: 'ข้าวผัดกะเพราหมูสับ/หมูชิ้น', category: 'อาหารจานเดียว', price: 55, addons: RICE_ADDONS },
+      { id: 'rr_rice_beef_basil', name: 'ข้าวผัดกะเพราเนื้อสับ/เนื้อชิ้น', category: 'อาหารจานเดียว', price: 65, addons: RICE_ADDONS },
+      { id: 'rr_rice_pork_garlic', name: 'ข้าวหมูกระเทียม', category: 'อาหารจานเดียว', price: 55, addons: RICE_ADDONS },
+      { id: 'rr_rice_beef_garlic', name: 'ข้าวเนื้อกระเทียม', category: 'อาหารจานเดียว', price: 65, addons: RICE_ADDONS },
+      { id: 'rr_dry_pork_porridge', name: 'ข้าวต้มแห้งหมู', category: 'อาหารจานเดียว', price: 60, addons: RICE_ADDONS },
+      { id: 'rr_dry_beef_porridge', name: 'ข้าวต้มแห้งเนื้อ', category: 'อาหารจานเดียว', price: 70, addons: RICE_ADDONS },
+      { id: 'rr_rice', name: 'ข้าวเปล่า', category: 'อาหารจานเดียว', price: 10 },
+      { id: 'rr_fried_wonton', name: 'เกี๊ยวทอด', category: 'ของทานเล่น', price: 10 },
+      { id: 'rr_pork_crackling', name: 'แคบหมู', category: 'ของทานเล่น', price: 20 },
+      { id: 'rr_pork_rind', name: 'กากหมูเจียว', category: 'ของทานเล่น', price: 25 },
+      { id: 'rr_thai_tea', name: 'ชาเย็น', category: 'เครื่องดื่ม', price: 25 },
+      { id: 'rr_chrysanthemum', name: 'เก๊กฮวย', category: 'เครื่องดื่ม', price: 20 },
+      { id: 'rr_roselle', name: 'กระเจี๊ยบ', category: 'เครื่องดื่ม', price: 20 },
+      { id: 'rr_oleang', name: 'โอเลี้ยง', category: 'เครื่องดื่ม', price: 20 },
+      { id: 'rr_longan', name: 'ลำไย', category: 'เครื่องดื่ม', price: 20 },
+      { id: 'rr_soda', name: 'น้ำอัดลม', category: 'เครื่องดื่ม', price: 15 },
+      { id: 'rr_oishi_honey_lemon', name: 'โออิชิน้ำผึ้งมะนาว', category: 'เครื่องดื่ม', price: 15 },
+      { id: 'rr_water', name: 'น้ำเปล่า', category: 'เครื่องดื่ม', price: 10 },
+      { id: 'rr_thai_coconut_cups', name: 'ขนมถ้วยไทยโบราณ (ชุด)', category: 'ของหวาน', price: 10 }
     ];
 
     // Sample Demo Data from User's Screenshots
@@ -3233,8 +3255,8 @@
     }
 
     // ── 14. LOCAL STORAGE STATE ENGINE ──
-    const DEFAULT_MENU_CATEGORIES = ['อาหารจานเดียว', 'ของหวาน', 'ยำ/น้ำพริก', 'เครื่องดื่ม', 'ก๋วยเตี๋ยว/เส้น', 'ของทอด', 'หมูกระทะ-ชาบู', 'ผัก/เห็ด'];
-    const DEFAULT_NOODLE_OPTIONS = ['เส้นเล็ก', 'เส้นใหญ่', 'บะหมี่', 'วุ้นเส้น', 'มาม่า'].map((name, index) => ({ id: `noodle_${index + 1}`, name, available: true }));
+    const DEFAULT_MENU_CATEGORIES = ['ก๋วยเตี๋ยว/เส้น', 'ลวกจิ้ม', 'อาหารจานเดียว', 'ของทานเล่น', 'เครื่องดื่ม', 'ของหวาน'];
+    const DEFAULT_NOODLE_OPTIONS = ['เส้นเล็ก', 'เส้นใหญ่', 'หมี่ขาว', 'บะหมี่', 'วุ้นเส้น', 'มาม่า', 'เกาเหลา (ไม่ใส่เส้น)'].map((name, index) => ({ id: `noodle_${index + 1}`, name, available: true }));
     let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
     let menuItems = normalizeMenuCatalog(JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG);
     let orders = JSON.parse(localStorage.getItem('pos_orders')) || [];
@@ -3435,7 +3457,7 @@
 
     function notifyIncomingPOSOrder(order) {
       const title = `ออเดอร์ใหม่ โต๊ะ ${order.tableNumber || order.table_number || '-'}`;
-      const items = (order.items || []).map(item => `${item.name}${item.noodleChoice ? ` (${item.noodleChoice.name})` : ''}${(item.addons || []).length ? ` + ${(item.addons || []).map(addon => addon.name).join(', ')}` : ''} ×${item.qty}`).join(', ');
+      const items = (order.items || []).map(item => `${item.name}${item.noodleChoice ? ` (${item.noodleChoice.name})` : ''}${item.soupChoice ? ` (น้ำซุป ${item.soupChoice.name})` : ''}${(item.addons || []).length ? ` + ${(item.addons || []).map(addon => addon.name).join(', ')}` : ''} ×${item.qty}`).join(', ');
       if ('Notification' in window && Notification.permission === 'granted') {
         try { new Notification(title, { body: items || 'มีรายการอาหารใหม่', tag: `tablecall-${order.id}` }); } catch (err) { console.warn('Desktop notification failed', err); }
       }
@@ -3964,6 +3986,7 @@
             <div style="font-weight: 700; font-size: 13.5px;">${custEscape(m.name)}</div>
             <div style="font-size: 11px; color: var(--text-muted);">${custEscape(m.category)} • ฿${m.price}</div>
             ${isNoodleMenu(m) ? `<select id="order-noodle-${custEscape(m.id)}" class="form-input" style="margin-top:6px;max-width:210px;min-height:38px">${availableNoodleOptions(m).map(option => `<option value="${custEscape(option.id)}">${custEscape(option.name)}</option>`).join('')}</select>` : ''}
+            ${(m.soupOptions || []).some(option => option.available !== false) ? `<select id="order-soup-${custEscape(m.id)}" class="form-input" aria-label="เลือกน้ำซุป ${custEscape(m.name)}" style="margin-top:6px;max-width:210px;min-height:38px">${m.soupOptions.filter(option => option.available !== false).map(option => `<option value="${custEscape(option.id)}">น้ำซุป: ${custEscape(option.name)}</option>`).join('')}</select>` : ''}
             ${(m.addons || []).some(addon => addon.available !== false) ? `<div class="order-addon-options"><strong>ท็อปปิ้งเพิ่ม</strong>${m.addons.filter(addon => addon.available !== false).map(addon => `<label><input type="checkbox" name="order-addon-${custEscape(m.id)}" value="${custEscape(addon.id)}"> ${custEscape(addon.name)} <span>+฿${Number(addon.price || 0).toLocaleString('th-TH')}</span></label>`).join('')}</div>` : ''}
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -3997,6 +4020,7 @@
       const selectedItems = [];
       let total = 0;
       let missingNoodleChoice = false;
+      let missingSoupChoice = false;
 
       menuItems.forEach(m => {
         const qtyEl = document.getElementById(`order-qty-${m.id}`);
@@ -4005,16 +4029,23 @@
           const noodleSelect = document.getElementById(`order-noodle-${m.id}`);
           const noodleChoice = noodleSelect && availableNoodleOptions(m).find(option => String(option.id) === String(noodleSelect.value));
           if (isNoodleMenu(m) && !noodleChoice) { missingNoodleChoice = true; return; }
+          const soupSelect = document.getElementById(`order-soup-${m.id}`);
+          const soupChoice = soupSelect && (m.soupOptions || []).find(option => option.available !== false && String(option.id) === String(soupSelect.value));
+          if ((m.soupOptions || []).some(option => option.available !== false) && !soupChoice) { missingSoupChoice = true; return; }
           const addonIds = Array.from(document.querySelectorAll(`input[name="order-addon-${CSS.escape(String(m.id))}"]:checked`)).map(input => String(input.value));
           const addons = (m.addons || []).filter(addon => addon.available !== false && addonIds.includes(String(addon.id)));
           const linePrice = Number(m.price || 0) + addons.reduce((sum, addon) => sum + (Number(addon.price) || 0), 0);
-          selectedItems.push({ menuId: String(m.id), addonIds, price: linePrice, qty, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
+          selectedItems.push({ menuId: String(m.id), addonIds, price: linePrice, qty, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}), ...(soupChoice ? { soupChoice: { id: String(soupChoice.id), name: soupChoice.name } } : {}) });
           total += linePrice * qty;
         }
       });
 
       if (missingNoodleChoice) {
         alert('กรุณาเลือกเส้นให้เมนูก๋วยเตี๋ยว/เส้นก่อนส่งออเดอร์');
+        return;
+      }
+      if (missingSoupChoice) {
+        alert('กรุณาเลือกน้ำซุปก่อนส่งออเดอร์');
         return;
       }
 
@@ -4070,7 +4101,7 @@
 
       orders.forEach(o => {
         const tr = document.createElement('tr');
-        const itemsText = o.items.map(i => `${custEscape(i.name)}${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${(i.addons || []).length ? ` + ${i.addons.map(addon => custEscape(addon.name)).join(', ')}` : ''} x${i.qty}`).join(', ');
+        const itemsText = o.items.map(i => `${custEscape(i.name)}${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${i.soupChoice ? ` (น้ำซุป ${custEscape(i.soupChoice.name)})` : ''}${(i.addons || []).length ? ` + ${i.addons.map(addon => custEscape(addon.name)).join(', ')}` : ''} x${i.qty}`).join(', ');
         const totalQty = o.items.reduce((s, i) => s + i.qty, 0);
 
         let statusBadge = '<span class="status-badge" style="background:#fef3c7; color:#b45309;">⏳ รอทำ</span>';
@@ -4150,7 +4181,7 @@
           </div>
           <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">🕒 เวลาสั่ง: ${o.time || o.createdAt || 'ไม่ระบุ'} · ${o.source === 'customer_link' || o.source === 'qr' ? 'สั่งจาก QR' : 'พนักงานรับออเดอร์'} · ${Number(o.guestCount) || 1} คน</div>
           <ul style="font-size: 13.5px; line-height: 1.8; padding-left: 18px; margin-bottom: 16px;">
-            ${o.items.map(i => `<li><strong>${custEscape(i.name)}</strong>${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${(i.addons || []).length ? `<div style="color:#4338ca;font-size:12px">+ ${(i.addons || []).map(addon => custEscape(addon.name)).join(', ')}</div>` : ''} x${i.qty}</li>`).join('')}
+            ${o.items.map(i => `<li><strong>${custEscape(i.name)}</strong>${i.noodleChoice ? ` (${custEscape(i.noodleChoice.name)})` : ''}${i.soupChoice ? ` (น้ำซุป ${custEscape(i.soupChoice.name)})` : ''}${(i.addons || []).length ? `<div style="color:#4338ca;font-size:12px">+ ${(i.addons || []).map(addon => custEscape(addon.name)).join(', ')}</div>` : ''} x${i.qty}</li>`).join('')}
           </ul>
           ${o.note ? `<div style="font-size: 12px; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;">📝 หมายเหตุ: ${o.note}</div>` : ''}
           <div style="display: flex; gap: 8px;">
@@ -4295,7 +4326,7 @@
 
       const totalAmount = receiptOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
       document.getElementById('rcpt-items-list').innerHTML = receiptOrders.flatMap(order => (order.items || []).map(item => `
-        <div class="receipt-row"><span>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${(item.addons || []).length ? `<small style="display:block;color:#4338ca">+ ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}</span><span>${((Number(item.price) || 0) * (Number(item.qty) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span></div>
+        <div class="receipt-row"><span>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${item.soupChoice ? ` (น้ำซุป ${custEscape(item.soupChoice.name)})` : ''}${(item.addons || []).length ? `<small style="display:block;color:#4338ca">+ ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}</span><span>${((Number(item.price) || 0) * (Number(item.qty) || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span></div>
       `)).join('') || '<div style="text-align:center;color:#64748b;font-size:11px;">ไม่มีรายการอาหาร</div>';
 
       document.getElementById('rcpt-subtotal').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -4680,6 +4711,11 @@
               available: option.available !== false
             })).filter(option => option.name);
           }
+          normalized.soupOptions = (Array.isArray(normalized.soupOptions) ? normalized.soupOptions : DEFAULT_SOUP_OPTIONS).map((option, index) => ({
+            id: String(option.id || `soup_${index + 1}`),
+            name: String(option.name || '').trim(),
+            available: option.available !== false
+          })).filter(option => option.name);
         }
         normalized.addons = (Array.isArray(normalized.addons) ? normalized.addons : []).map((addon, index) => ({
           id: String(addon.id || `addon_${index + 1}`),
@@ -4728,6 +4764,14 @@
         showToast(`บันทึกไม่สำเร็จ: ${explainAppsScriptError(error)}`);
         return false;
       }
+    }
+
+    async function loadRongRuaMenu() {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่เปลี่ยนเมนูได้');
+      if (!confirm('แทนที่เมนูอาหารปัจจุบันทั้งหมดด้วยเมนูจากรูป 33 รายการ และบันทึกลง Google Sheets ใช่หรือไม่?')) return;
+      const catalog = normalizeMenuCatalog(JSON.parse(JSON.stringify(DEFAULT_CATALOG)));
+      const categories = reconcileMenuCategories(DEFAULT_MENU_CATEGORIES, catalog);
+      if (await commitMenuCatalog(catalog, categories)) showToast('ลงเมนูจากรูปและบันทึกไป Google Sheets แล้ว');
     }
 
     function renderMenuItems() {
@@ -4944,7 +4988,10 @@
         available: editingMenuId ? (menuItems.find(menu => String(menu.id) === editingMenuId)?.available !== false) : true,
         addons: menuModalAddons.map(addon => ({ ...addon })),
         addonsConfigured: true,
-        ...(isNoodleMenu({ category: cat }) ? { noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })) } : {})
+        ...(isNoodleMenu({ category: cat }) ? {
+          noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })),
+          soupOptions: (menuItems.find(menu => String(menu.id) === String(editingMenuId))?.soupOptions || DEFAULT_SOUP_OPTIONS).map(option => ({ ...option }))
+        } : {})
       };
       const next = editingMenuId ? menuItems.map(menu => String(menu.id) === editingMenuId ? item : menu) : [...menuItems, item];
       if (await commitMenuCatalog(next, menuCategories)) {
@@ -5982,15 +6029,15 @@
     });
 
     // ── CUSTOMER ORDER PAGE FUNCTIONS ──
-    let custCart = [];       // [{id, name, price, qty, noodleChoice?, addons?}]
+    let custCart = [];       // [{id, name, price, qty, noodleChoice?, soupChoice?, addons?}]
     let custNoodleSelections = {};
+    let custSoupSelections = {};
     let custAddonSelections = {};
     let custTableNumber = '';
 
     const MENU_EMOJI = {
-      'อาหารจานเดียว': '🍛', 'ก๋วยเตี๋ยว/เส้น': '🍜',
-      'ยำ/น้ำพริก': '🥗', 'ของทอด': '🍗', 'ของหวาน': '🍮',
-      'เครื่องดื่ม': '🧃', 'หมูกระทะ-ชาบู': '🥩', 'ผัก/เห็ด': '🥦'
+      'อาหารจานเดียว': '🍛', 'ก๋วยเตี๋ยว/เส้น': '🍜', 'ลวกจิ้ม': '🥢',
+      'ของทานเล่น': '🥟', 'ของหวาน': '🍮', 'เครื่องดื่ม': '🧃'
     };
 
     const custEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -5999,6 +6046,7 @@
       custTableNumber = String(tableNum || '').trim();
       custCart = [];
       custNoodleSelections = {};
+      custSoupSelections = {};
       custAddonSelections = {};
       document.body.classList.add('customer-order-mode');
       document.getElementById('sidebar').style.display = 'none';
@@ -6038,14 +6086,18 @@
         const options = availableNoodleOptions(item);
         const selected = custNoodleSelections[id] || options[0]?.id || '';
         const noodleSelect = isNoodleMenu(item) ? `<label class="cust-noodle-picker"><span>เลือกเส้น</span><select id="cust-noodle-${custEscape(id)}" onchange="custSetNoodleChoice('${custEscape(id)}',this.value)">${options.map(option => `<option value="${custEscape(option.id)}" ${String(option.id) === String(selected) ? 'selected' : ''}>${custEscape(option.name)}</option>`).join('')}</select></label>` : '';
+        const soups = (Array.isArray(item.soupOptions) ? item.soupOptions : []).filter(option => option && option.available !== false);
+        const selectedSoup = custSoupSelections[id] || soups[0]?.id || '';
+        const soupSelect = soups.length ? `<label class="cust-noodle-picker"><span>เลือกน้ำซุป</span><select id="cust-soup-${custEscape(id)}" onchange="custSetSoupChoice('${custEscape(id)}',this.value)">${soups.map(option => `<option value="${custEscape(option.id)}" ${String(option.id) === String(selectedSoup) ? 'selected' : ''}>${custEscape(option.name)}</option>`).join('')}</select></label>` : '';
         const availableAddons = (item.addons || []).filter(addon => addon.available !== false);
         const selectedAddons = custAddonSelections[id] || [];
         const addonsPicker = availableAddons.length ? `<div class="cust-addon-picker"><strong>เพิ่มท็อปปิ้ง</strong>${availableAddons.map(addon => `<label><input type="checkbox" value="${custEscape(addon.id)}" ${selectedAddons.includes(String(addon.id)) ? 'checked' : ''} onchange="custSetAddonChoice('${custEscape(id)}')"> ${custEscape(addon.name)} <span>+฿${Number(addon.price || 0).toLocaleString('th-TH')}</span></label>`).join('')}</div>` : '';
-        return `<div class="cust-menu-row"><div class="cust-menu-info"><div class="cust-menu-name">${custEscape(item.name)}</div><div class="cust-menu-category">${custEscape(item.category)}</div>${noodleSelect}${addonsPicker}<div class="cust-menu-price">เริ่ม ${custMoney(item.price)}</div></div><div class="cust-qty"><button aria-label="ลด ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,-1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">−</button><span>${qty}</span><button aria-label="เพิ่ม ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,1,this.dataset.noodle)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}">+</button></div></div>`;
+        return `<div class="cust-menu-row"><div class="cust-menu-info"><div class="cust-menu-name">${custEscape(item.name)}</div><div class="cust-menu-category">${custEscape(item.category)}</div>${noodleSelect}${soupSelect}${addonsPicker}<div class="cust-menu-price">เริ่ม ${custMoney(item.price)}</div></div><div class="cust-qty"><button aria-label="ลด ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,-1,this.dataset.noodle,this.dataset.soup)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}" data-soup="${custEscape(selectedSoup)}">−</button><span>${qty}</span><button aria-label="เพิ่ม ${custEscape(item.name)}" onclick="custChangeQty(this.dataset.id,1,this.dataset.noodle,this.dataset.soup)" data-id="${custEscape(id)}" data-noodle="${custEscape(selected)}" data-soup="${custEscape(selectedSoup)}">+</button></div></div>`;
       }).join('');
     }
     function custAddToCart(menuId) { custChangeQty(menuId, 1); }
     function custSetNoodleChoice(menuId, choiceId) { custNoodleSelections[String(menuId)] = String(choiceId || ''); }
+    function custSetSoupChoice(menuId, choiceId) { custSoupSelections[String(menuId)] = String(choiceId || ''); }
     function custSetAddonChoice(menuId) {
       const id = String(menuId);
       custAddonSelections[id] = Array.from(document.querySelectorAll(`.cust-addon-picker input[type="checkbox"]`))
@@ -6053,21 +6105,27 @@
         .map(input => String(input.value));
       custUpdateCartBar();
     }
-    function custChangeQty(menuId, delta, selectedChoiceId) {
+    function custChangeQty(menuId, delta, selectedChoiceId, selectedSoupId) {
       const item = menuItems.find(entry => String(entry.id) === String(menuId) && isMenuAvailableForOrdering(entry));
       if (!item) return;
       const options = availableNoodleOptions(item);
-      const choiceId = isNoodleMenu(item) ? String(selectedChoiceId || custNoodleSelections[String(menuId)] || options[0]?.id || '') : '';
+      const liveNoodleId = document.getElementById(`cust-noodle-${String(menuId)}`)?.value;
+      const choiceId = isNoodleMenu(item) ? String(liveNoodleId || custNoodleSelections[String(menuId)] || selectedChoiceId || options[0]?.id || '') : '';
       if (isNoodleMenu(item) && !choiceId) return showToast('เมนูนี้ไม่มีเส้นที่พร้อมจำหน่าย');
+      const soups = (Array.isArray(item.soupOptions) ? item.soupOptions : []).filter(option => option && option.available !== false);
+      const liveSoupId = document.getElementById(`cust-soup-${String(menuId)}`)?.value;
+      const soupId = String(liveSoupId || custSoupSelections[String(menuId)] || selectedSoupId || soups[0]?.id || '');
+      if (soups.length && !soupId) return showToast('กรุณาเลือกน้ำซุป');
+      const soupChoice = soups.find(option => String(option.id) === soupId);
       const selectedAddonIds = custAddonSelections[String(menuId)] || [];
       const addons = (item.addons || []).filter(addon => addon.available !== false && selectedAddonIds.includes(String(addon.id))).map(addon => ({ id: String(addon.id), name: addon.name, price: Number(addon.price) || 0 }));
       const addonKey = addons.map(addon => addon.id).sort().join(',');
-      const existing = custCart.find(entry => String(entry.id) === String(menuId) && String(entry.noodleChoice?.id || '') === choiceId && (entry.addons || []).map(addon => String(addon.id)).sort().join(',') === addonKey);
+      const existing = custCart.find(entry => String(entry.id) === String(menuId) && String(entry.noodleChoice?.id || '') === choiceId && String(entry.soupChoice?.id || '') === soupId && (entry.addons || []).map(addon => String(addon.id)).sort().join(',') === addonKey);
       if (existing) { existing.qty += delta; if (existing.qty <= 0) custCart = custCart.filter(entry => entry !== existing); }
       else if (delta > 0) {
         const noodleChoice = options.find(option => String(option.id) === choiceId);
         const basePrice = Number(item.price) || 0;
-        custCart.push({ id: item.id, name: item.name, basePrice, price: basePrice + addons.reduce((sum, addon) => sum + addon.price, 0), addons, qty: delta, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}) });
+        custCart.push({ id: item.id, name: item.name, basePrice, price: basePrice + addons.reduce((sum, addon) => sum + addon.price, 0), addons, qty: delta, ...(noodleChoice ? { noodleChoice: { id: String(noodleChoice.id), name: noodleChoice.name } } : {}), ...(soupChoice ? { soupChoice: { id: String(soupChoice.id), name: soupChoice.name } } : {}) });
       }
       custRenderMenu(document.querySelector('.cust-cat-pill.active')?.dataset.category || 'ทั้งหมด');
       custUpdateCartBar();
@@ -6090,7 +6148,7 @@
       const t = tables.find(tb => String(tb.number) === custTableNumber);
       button.disabled = true; button.textContent = 'กำลังส่งออเดอร์...'; feedback.style.display = 'none';
       try {
-        const saved = await tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: custCart.map(item => ({ menuId: String(item.id), addonIds: (item.addons || []).map(addon => String(addon.id)), qty: item.qty, ...(item.noodleChoice ? { noodleChoice: item.noodleChoice } : {}) })), note, source: 'customer_link', guestCount } });
+        const saved = await tableCallGas('submitPOSOrder', { order: { tableNumber: custTableNumber, items: custCart.map(item => ({ menuId: String(item.id), addonIds: (item.addons || []).map(addon => String(addon.id)), qty: item.qty, ...(item.noodleChoice ? { noodleChoice: item.noodleChoice } : {}), ...(item.soupChoice ? { soupChoice: item.soupChoice } : {}) })), note, source: 'customer_link', guestCount } });
         const normalized = { id: saved.id, tableId: t ? t.id : 'unknown', tableNumber: custTableNumber, items: saved.items || custCart.map(item => ({ ...item })), note: saved.note || note, source: 'customer_link', guestCount: Number(saved.guest_count) || guestCount, total: Number(saved.total) || 0, status: saved.status || 'pending', created_at: saved.created_at, createdAt: saved.created_at ? new Date(saved.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) };
         if (!orders.some(order => String(order.id) === String(normalized.id))) orders.unshift(normalized);
         if (t) { t.status = 'occupied'; t.callNote = 'ลูกค้าส่งออเดอร์จาก QR'; t.callTime = normalized.createdAt; }
@@ -6103,7 +6161,7 @@
         document.getElementById('cust-menu-grid').parentElement.style.display = 'none';
         document.getElementById('cust-cat-scroll').style.display = 'none';
         const success = document.getElementById('cust-success-msg');
-        success.innerHTML = `<strong>✅ รับออเดอร์แล้ว</strong><div class="cust-success-meta">โต๊ะ ${custEscape(custTableNumber)} • เลขออเดอร์ ${custEscape(normalized.id)}</div><div class="cust-success-items">${normalized.items.map(item => `<div>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${(item.addons || []).length ? `<small> + ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}<strong>${custMoney((Number(item.price) || 0) * (Number(item.qty) || 0))}</strong></div>`).join('')}</div><p>รวม ${custMoney(normalized.total)}</p><small>พนักงานได้รับรายการแล้ว ขอบคุณค่ะ</small>`;
+        success.innerHTML = `<strong>✅ รับออเดอร์แล้ว</strong><div class="cust-success-meta">โต๊ะ ${custEscape(custTableNumber)} • เลขออเดอร์ ${custEscape(normalized.id)}</div><div class="cust-success-items">${normalized.items.map(item => `<div>${custEscape(item.name)}${item.noodleChoice ? ` (${custEscape(item.noodleChoice.name)})` : ''}${item.soupChoice ? ` (น้ำซุป ${custEscape(item.soupChoice.name)})` : ''}${(item.addons || []).length ? `<small> + ${(item.addons || []).map(addon => custEscape(addon.name)).join(', ')}</small>` : ''} × ${Number(item.qty) || 0}<strong>${custMoney((Number(item.price) || 0) * (Number(item.qty) || 0))}</strong></div>`).join('')}</div><p>รวม ${custMoney(normalized.total)}</p><small>พนักงานได้รับรายการแล้ว ขอบคุณค่ะ</small>`;
         success.style.display = 'block';
         document.getElementById('cust-cart-bar').style.display = 'none';
         custCart = [];
