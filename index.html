@@ -1967,7 +1967,7 @@
           <div class="card-header-flex">
             <div class="card-title">🍽️ จัดการเมนูอาหาร</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn-tbl-action" data-owner-only="true" onclick="loadRongRuaMenu()">📋 ตั้งเมนูพื้นฐานร้าน (33 รายการ)</button>
+              <button class="btn-tbl-action" data-owner-only="true" onclick="loadRongRuaMenu()">📋 ตั้งเมนูพื้นฐานร้าน (37 รายการ)</button>
               <button class="btn-primary" data-owner-only="true" onclick="openAddMenuModal()">➕ เพิ่มเมนูอาหาร</button>
             </div>
           </div>
@@ -2667,6 +2667,15 @@
         <div id="menu-noodle-options-list" style="display:grid;gap:8px;margin-top:10px"></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:6px">กดสถานะเพื่อพักเส้น เส้นที่พักจะไม่แสดงในหน้าสั่งอาหาร</div>
       </div>
+      <div class="form-group" id="menu-soup-options-editor" style="display:none">
+        <label>ตัวเลือกน้ำซุป</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="menu-soup-option-input" class="form-input" placeholder="เพิ่มน้ำซุป เช่น น้ำใส" maxlength="40">
+          <button type="button" class="btn-tbl-action" style="min-width:90px" onclick="addMenuSoupOption()">➕ เพิ่มซุป</button>
+        </div>
+        <div id="menu-soup-options-list" style="display:grid;gap:8px;margin-top:10px"></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">ซุปที่พักขายจะไม่แสดงในหน้าสั่งอาหาร และแก้ชื่อ/ลบได้</div>
+      </div>
       <div class="form-group" id="menu-addons-editor">
         <label>ท็อปปิ้ง / ตัวเลือกพิเศษ</label>
         <div class="menu-addon-presets">
@@ -3034,12 +3043,16 @@
       { id: 'addon_omelet', name: 'ไข่เจียว', price: 15, available: true },
       { id: 'addon_extra', name: 'พิเศษ', price: 10, available: true }
     ];
-    const DEFAULT_SOUP_OPTIONS = ['น้ำตกเข้มข้น', 'ต้มยำ', 'น้ำตกต้มยำ', 'น้ำข้น (ไม่มีเลือด)', 'หม่าล่า'].map((name, index) => ({ id: `soup_${index + 1}`, name, available: true }));
+    const DEFAULT_SOUP_OPTIONS = ['น้ำตกเข้มข้น', 'น้ำตกต้มยำ', 'ต้มยำ', 'น้ำใส', 'น้ำข้น (ไม่มีเลือด)', 'หม่าล่า'].map((name, index) => ({ id: `soup_${index + 1}`, name, available: true }));
     const DEFAULT_CATALOG = [
-      { id: 'rr_noodle_pork', name: 'ก๋วยเตี๋ยว/เกาเหลาหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 60, soupOptions: DEFAULT_SOUP_OPTIONS },
-      { id: 'rr_noodle_mixed_pork', name: 'ก๋วยเตี๋ยว/เกาเหลารวมหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
-      { id: 'rr_noodle_beef', name: 'ก๋วยเตี๋ยว/เกาเหลาเนื้อ', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
-      { id: 'rr_noodle_signature', name: 'ก๋วยเตี๋ยว/เกาเหลารวมรงค์เรือ (หมู+เนื้อ)', category: 'ก๋วยเตี๋ยว/เส้น', price: 109, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_pork', name: 'ก๋วยเตี๋ยวหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 60, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_mixed_pork', name: 'ก๋วยเตี๋ยวรวมหมู', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_beef', name: 'ก๋วยเตี๋ยวเนื้อ', category: 'ก๋วยเตี๋ยว/เส้น', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_noodle_signature', name: 'ก๋วยเตี๋ยวรวมรงค์เรือ (หมู+เนื้อ)', category: 'ก๋วยเตี๋ยว/เส้น', price: 109, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_gaolao_pork', name: 'เกาเหลาหมู', category: 'เกาเหลา', price: 60, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_gaolao_mixed_pork', name: 'เกาเหลารวมหมู', category: 'เกาเหลา', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_gaolao_beef', name: 'เกาเหลาเนื้อ', category: 'เกาเหลา', price: 70, soupOptions: DEFAULT_SOUP_OPTIONS },
+      { id: 'rr_gaolao_signature', name: 'เกาเหลารวมรงค์เรือ (หมู+เนื้อ)', category: 'เกาเหลา', price: 109, soupOptions: DEFAULT_SOUP_OPTIONS },
       { id: 'rr_pork_liver', name: 'ตับหมูลวก', category: 'ลวกจิ้ม', price: 30 },
       { id: 'rr_stewed_ribs', name: 'ซี่โครงหมูตุ๋น', category: 'ลวกจิ้ม', price: 40 },
       { id: 'rr_blanch_morning_glory', name: 'ผักบุ้งลวก', category: 'ลวกจิ้ม', price: 10 },
@@ -3362,14 +3375,14 @@
     }
 
     // ── 14. LOCAL STORAGE STATE ENGINE ──
-    const DEFAULT_MENU_CATEGORIES = ['ก๋วยเตี๋ยว/เส้น', 'ลวกจิ้ม', 'อาหารจานเดียว', 'ของทานเล่น', 'เครื่องดื่ม', 'ของหวาน'];
+    const DEFAULT_MENU_CATEGORIES = ['ก๋วยเตี๋ยว/เส้น', 'เกาเหลา', 'ลวกจิ้ม', 'อาหารจานเดียว', 'ของทานเล่น', 'เครื่องดื่ม', 'ของหวาน'];
     const DEFAULT_STORE_ZONES = [
       { code: 'S', name: 'หน้าร้าน' },
       { code: 'B', name: 'หลังร้าน' },
       { code: 'A', name: 'ในร้าน' },
       { code: 'VIP', name: 'VIP' }
     ];
-    const DEFAULT_NOODLE_OPTIONS = ['เส้นเล็ก', 'เส้นใหญ่', 'หมี่ขาว', 'บะหมี่', 'วุ้นเส้น', 'มาม่า', 'เกาเหลา (ไม่ใส่เส้น)'].map((name, index) => ({ id: `noodle_${index + 1}`, name, available: true }));
+    const DEFAULT_NOODLE_OPTIONS = ['เส้นหมี่', 'หมี่ขาว', 'เส้นใหญ่', 'วุ้นเส้น', 'เส้นเล็ก', 'บะหมี่', 'มาม่า'].map((name, index) => ({ id: `noodle_${index + 1}`, name, available: true }));
     let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
     let menuItems = normalizeMenuCatalog(JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG);
     let orders = JSON.parse(localStorage.getItem('pos_orders')) || [];
@@ -3400,6 +3413,7 @@
     let currentView = 'floor';
     let menuCategories = reconcileMenuCategories(JSON.parse(localStorage.getItem('pos_categories') || 'null') || [...DEFAULT_MENU_CATEGORIES], menuItems);
     let menuModalNoodleOptions = [];
+    let menuModalSoupOptions = [];
     let menuModalAddons = [];
     let menuModalAddonsTouched = false;
     let editingMenuId = null;
@@ -4839,6 +4853,10 @@
       return /ก๋วยเตี๋ยว|เส้น/.test(String(menu && menu.category || ''));
     }
 
+    function usesSoupOptions(menu) {
+      return isNoodleMenu(menu) || /เกาเหลา/.test(String(menu && menu.category || ''));
+    }
+
     function usesRiceToppings(menu) {
       const name = String(menu && menu.name || '');
       const category = String(menu && menu.category || '');
@@ -4882,6 +4900,8 @@
               available: option.available !== false
             })).filter(option => option.name);
           }
+        }
+        if (usesSoupOptions(normalized)) {
           normalized.soupOptions = (Array.isArray(normalized.soupOptions) ? normalized.soupOptions : DEFAULT_SOUP_OPTIONS).map((option, index) => ({
             id: String(option.id || `soup_${index + 1}`),
             name: String(option.name || '').trim(),
@@ -4908,7 +4928,9 @@
     }
 
     function isMenuAvailableForOrdering(menu) {
-      return menu.available !== false && (!isNoodleMenu(menu) || availableNoodleOptions(menu).length > 0);
+      return menu.available !== false
+        && (!isNoodleMenu(menu) || availableNoodleOptions(menu).length > 0)
+        && (!usesSoupOptions(menu) || (Array.isArray(menu.soupOptions) && menu.soupOptions.some(option => option && option.available !== false)));
     }
 
     async function commitMenuCatalog(nextItems, nextCategories) {
@@ -4939,10 +4961,10 @@
 
     async function loadRongRuaMenu() {
       if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่เปลี่ยนเมนูได้');
-      if (!confirm('แทนที่เมนูอาหารปัจจุบันทั้งหมดด้วยเมนูจากรูป 33 รายการ และบันทึกลง Google Sheets ใช่หรือไม่?')) return;
+       if (!confirm('แทนที่เมนูอาหารปัจจุบันทั้งหมดด้วยเมนูจากรูป 37 รายการ (รวมเมนูเกาเหลา) และบันทึกลง Google Sheets ใช่หรือไม่?')) return;
       const catalog = normalizeMenuCatalog(JSON.parse(JSON.stringify(DEFAULT_CATALOG)));
       const categories = reconcileMenuCategories(DEFAULT_MENU_CATEGORIES, catalog);
-      if (await commitMenuCatalog(catalog, categories)) showToast('ลงเมนูจากรูปและบันทึกไป Google Sheets แล้ว');
+       if (await commitMenuCatalog(catalog, categories)) showToast('ลงเมนูพื้นฐาน 37 รายการ รวมเกาเหลาและตัวเลือกเส้น/น้ำซุป แล้ว');
     }
 
     function renderMenuItems() {
@@ -4986,7 +5008,9 @@
       document.getElementById('menu-name-input').value = '';
       document.getElementById('menu-price-input').value = '60';
       document.getElementById('menu-noodle-option-input').value = '';
+      document.getElementById('menu-soup-option-input').value = '';
       menuModalNoodleOptions = [];
+      menuModalSoupOptions = [];
       menuModalAddons = [];
       menuModalAddonsTouched = false;
       document.getElementById('menu-addon-name-input').value = '';
@@ -5009,7 +5033,9 @@
       document.getElementById('menu-name-input').value = menu.name;
       document.getElementById('menu-price-input').value = Number(menu.price) || 0;
       document.getElementById('menu-noodle-option-input').value = '';
+      document.getElementById('menu-soup-option-input').value = '';
       menuModalNoodleOptions = JSON.parse(JSON.stringify(menu.noodleOptions || (isNoodleMenu(menu) ? DEFAULT_NOODLE_OPTIONS : [])));
+      menuModalSoupOptions = JSON.parse(JSON.stringify(menu.soupOptions || (usesSoupOptions(menu) ? DEFAULT_SOUP_OPTIONS : [])));
       menuModalAddons = JSON.parse(JSON.stringify(menu.addons || []));
       menuModalAddonsTouched = true;
       document.getElementById('menu-addon-name-input').value = '';
@@ -5020,11 +5046,17 @@
     }
 
     function toggleNoodleOptionsEditor() {
-      const editor = document.getElementById('menu-noodle-options-editor');
-      const isNoodle = isNoodleMenu({ category: document.getElementById('menu-category-select').value });
-      editor.style.display = isNoodle ? 'block' : 'none';
+      const category = document.getElementById('menu-category-select').value;
+      const menuShape = { category };
+      const isNoodle = isNoodleMenu(menuShape);
+      const hasSoup = usesSoupOptions(menuShape);
+      document.getElementById('menu-noodle-options-editor').style.display = isNoodle ? 'block' : 'none';
+      document.getElementById('menu-soup-options-editor').style.display = hasSoup ? 'block' : 'none';
+      const editedMenu = menuItems.find(menu => String(menu.id) === String(editingMenuId));
       if (isNoodle && !editingMenuId && !menuModalNoodleOptions.length) menuModalNoodleOptions = DEFAULT_NOODLE_OPTIONS.map(option => ({ ...option }));
+      if (hasSoup && !menuModalSoupOptions.length && (!editedMenu || !usesSoupOptions(editedMenu))) menuModalSoupOptions = DEFAULT_SOUP_OPTIONS.map(option => ({ ...option }));
       renderMenuNoodleOptions();
+      renderMenuSoupOptions();
       maybeSeedMenuAddons();
     }
 
@@ -5071,6 +5103,51 @@
       if (!option || !confirm(`ลบตัวเลือก ${option.name} ใช่หรือไม่?`)) return;
       menuModalNoodleOptions.splice(index, 1);
       renderMenuNoodleOptions();
+    }
+
+    function renderMenuSoupOptions() {
+      const host = document.getElementById('menu-soup-options-list');
+      if (!host) return;
+      host.innerHTML = menuModalSoupOptions.length ? menuModalSoupOptions.map((option, index) => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border-color);border-radius:10px;background:#fff">
+          <span style="flex:1;min-width:0;font-weight:650">${custEscape(option.name)}</span>
+          <button type="button" class="status-badge ${option.available === false ? 'status-calling' : 'status-available'}" onclick="toggleMenuSoupOption(${index})">${option.available === false ? 'ไม่พร้อม' : 'พร้อม'}</button>
+          <button type="button" class="action-icon-btn" aria-label="แก้ไข ${custEscape(option.name)}" onclick="editMenuSoupOption(${index})">✏️</button>
+          <button type="button" class="action-icon-btn" style="color:#ef4444" aria-label="ลบ ${custEscape(option.name)}" onclick="deleteMenuSoupOption(${index})">🗑️</button>
+        </div>`).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:12px">ยังไม่มีตัวเลือกน้ำซุป</div>';
+    }
+
+    function addMenuSoupOption() {
+      const input = document.getElementById('menu-soup-option-input');
+      const name = input.value.trim();
+      if (!name) return input.focus();
+      if (menuModalSoupOptions.some(option => option.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return showToast('มีตัวเลือกน้ำซุปนี้แล้ว');
+      menuModalSoupOptions.push({ id: `soup_${Date.now()}_${menuModalSoupOptions.length}`, name, available: true });
+      input.value = '';
+      renderMenuSoupOptions();
+    }
+
+    function toggleMenuSoupOption(index) {
+      if (!menuModalSoupOptions[index]) return;
+      menuModalSoupOptions[index].available = menuModalSoupOptions[index].available === false;
+      renderMenuSoupOptions();
+    }
+
+    function editMenuSoupOption(index) {
+      const option = menuModalSoupOptions[index];
+      if (!option) return;
+      const name = prompt('แก้ไขชื่อน้ำซุป:', option.name);
+      if (name === null) return;
+      if (!name.trim()) return showToast('กรุณาระบุชื่อน้ำซุป');
+      option.name = name.trim();
+      renderMenuSoupOptions();
+    }
+
+    function deleteMenuSoupOption(index) {
+      const option = menuModalSoupOptions[index];
+      if (!option || !confirm(`ลบน้ำซุป “${option.name}” ใช่หรือไม่?`)) return;
+      menuModalSoupOptions.splice(index, 1);
+      renderMenuSoupOptions();
     }
 
     function renderMenuAddons() {
@@ -5159,10 +5236,8 @@
         available: editingMenuId ? (menuItems.find(menu => String(menu.id) === editingMenuId)?.available !== false) : true,
         addons: menuModalAddons.map(addon => ({ ...addon })),
         addonsConfigured: true,
-        ...(isNoodleMenu({ category: cat }) ? {
-          noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })),
-          soupOptions: (menuItems.find(menu => String(menu.id) === String(editingMenuId))?.soupOptions || DEFAULT_SOUP_OPTIONS).map(option => ({ ...option }))
-        } : {})
+        ...(isNoodleMenu({ category: cat }) ? { noodleOptions: menuModalNoodleOptions.map(option => ({ ...option })) } : {}),
+        ...(usesSoupOptions({ category: cat }) ? { soupOptions: menuModalSoupOptions.map(option => ({ ...option })) } : {})
       };
       const next = editingMenuId ? menuItems.map(menu => String(menu.id) === editingMenuId ? item : menu) : [...menuItems, item];
       if (await commitMenuCatalog(next, menuCategories)) {
