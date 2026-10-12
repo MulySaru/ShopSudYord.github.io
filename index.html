@@ -1633,11 +1633,7 @@
           <div id="floor-mobile-result-count" role="status" aria-live="polite"></div>
         </div>
         <div class="zone-filters" id="zone-filter-container">
-          <button class="zone-pill active" onclick="filterZone('ALL')">ทั้งหมด</button>
-          <button class="zone-pill" onclick="filterZone('S')">โซน S (หน้าร้าน)</button>
-          <button class="zone-pill" onclick="filterZone('A')">โซน A (ห้องแอร์)</button>
-          <button class="zone-pill" onclick="filterZone('B')">โซน B (ระเบียง)</button>
-          <button class="zone-pill" onclick="filterZone('VIP')">โซน VIP</button>
+          <!-- Zone filters are generated from the editable zone list. -->
         </div>
 
         <div class="table-grid" id="tables-container">
@@ -1971,7 +1967,7 @@
           <div class="card-header-flex">
             <div class="card-title">🍽️ จัดการเมนูอาหาร</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn-tbl-action" data-owner-only="true" onclick="loadRongRuaMenu()">📋 ใช้เมนูตามรูป</button>
+              <button class="btn-tbl-action" data-owner-only="true" onclick="loadRongRuaMenu()">📋 ตั้งเมนูพื้นฐานร้าน (33 รายการ)</button>
               <button class="btn-primary" data-owner-only="true" onclick="openAddMenuModal()">➕ เพิ่มเมนูอาหาร</button>
             </div>
           </div>
@@ -2000,7 +1996,7 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">▦ จัดการโต๊ะ & ป้าย QR Code ประจำโต๊ะ</div>
-            <button class="btn-primary" onclick="openAddTableModal()">➕ เพิ่มโต๊ะใหม่</button>
+            <button class="btn-primary" data-owner-only="true" onclick="openAddTableModal()">➕ เพิ่มโต๊ะใหม่</button>
           </div>
           <div id="manage-table-mobile-tools" style="display:none">
             <label class="manage-table-search" for="manage-table-search-input">
@@ -2212,7 +2208,7 @@
         <div class="content-card">
           <div class="card-header-flex">
             <div class="card-title">🔀 โซนที่นั่งในร้านอาหาร</div>
-            <button class="btn-primary" onclick="openAddZoneModal()">➕ เพิ่มโซน</button>
+            <button class="btn-primary" data-owner-only="true" onclick="openAddZoneModal()">➕ เพิ่มโซน</button>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;" id="zones-list-container">
           </div>
@@ -3148,6 +3144,7 @@
     let posStateSaveTimer = null;
     let lastPOSStateUpdatedAt = '';
     let posCloudSyncTimer = null;
+    let customerCatalogSyncTimer = null;
     let posOrderSyncInitialized = false;
     let employeeSyncLastAt = 0;
     let tableCallAdminToken = '';
@@ -3235,7 +3232,31 @@
     }
 
     function currentSharedPOSState() {
-      return { tables, menuItems, categories: menuCategories, settings: storeSettings, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
+      return { tables, menuItems, categories: menuCategories, settings: { ...storeSettings, zones: getStoreZones() }, members, promotions, stockList, expensesList, suppliersList, poList, staffList, attendanceList };
+    }
+
+    function getStoreZones() {
+      const source = Array.isArray(storeSettings && storeSettings.zones) ? storeSettings.zones : DEFAULT_STORE_ZONES;
+      const seen = new Set();
+      const zones = source.map(zone => ({
+        code: String(zone && zone.code || '').trim().toUpperCase(),
+        name: String(zone && zone.name || '').trim()
+      })).filter(zone => {
+        if (!zone.code || !zone.name || seen.has(zone.code)) return false;
+        seen.add(zone.code);
+        return true;
+      });
+      const result = zones.length ? zones : DEFAULT_STORE_ZONES.map(zone => ({ ...zone }));
+      (Array.isArray(tables) ? tables : []).forEach(table => {
+        const code = String(table && table.zone || '').trim().toUpperCase();
+        if (code && !result.some(zone => zone.code === code)) result.push({ code, name: `โซน ${code}` });
+      });
+      return result;
+    }
+
+    function storeZoneName(code) {
+      const zone = getStoreZones().find(item => item.code === String(code || '').trim().toUpperCase());
+      return zone ? zone.name : String(code || 'ไม่ระบุโซน');
     }
 
     async function tableCallGasPost(action, payload = {}, needsAdmin = false) {
@@ -3342,6 +3363,12 @@
 
     // ── 14. LOCAL STORAGE STATE ENGINE ──
     const DEFAULT_MENU_CATEGORIES = ['ก๋วยเตี๋ยว/เส้น', 'ลวกจิ้ม', 'อาหารจานเดียว', 'ของทานเล่น', 'เครื่องดื่ม', 'ของหวาน'];
+    const DEFAULT_STORE_ZONES = [
+      { code: 'S', name: 'หน้าร้าน' },
+      { code: 'B', name: 'หลังร้าน' },
+      { code: 'A', name: 'ในร้าน' },
+      { code: 'VIP', name: 'VIP' }
+    ];
     const DEFAULT_NOODLE_OPTIONS = ['เส้นเล็ก', 'เส้นใหญ่', 'หมี่ขาว', 'บะหมี่', 'วุ้นเส้น', 'มาม่า', 'เกาเหลา (ไม่ใส่เส้น)'].map((name, index) => ({ id: `noodle_${index + 1}`, name, available: true }));
     let tables = JSON.parse(localStorage.getItem('pos_tables')) || getInitialTables();
     let menuItems = normalizeMenuCatalog(JSON.parse(localStorage.getItem('pos_menu')) || DEFAULT_CATALOG);
@@ -3866,11 +3893,20 @@
 
     // 18.2 FLOOR PLAN & TABLES (TABLECALL)
     function filterZone(zone) {
-      currentFilterZone = zone;
-      document.querySelectorAll('.zone-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.includes(zone === 'ALL' ? 'ทั้งหมด' : `โซน ${zone}`));
-      });
+      currentFilterZone = String(zone || 'ALL');
+      renderZoneFilters();
       renderFloorTables();
+    }
+
+    function renderZoneFilters() {
+      const host = document.getElementById('zone-filter-container');
+      if (!host) return;
+      const options = [{ code: 'ALL', name: 'ทุกโซน' }, ...getStoreZones()];
+      if (currentFilterZone !== 'ALL' && !options.some(zone => zone.code === currentFilterZone)) currentFilterZone = 'ALL';
+      host.innerHTML = options.map(zone => {
+        const label = zone.code === 'ALL' ? zone.name : `${zone.name} · ${zone.code}`;
+        return `<button type="button" class="zone-pill${currentFilterZone === zone.code ? ' active' : ''}" aria-pressed="${currentFilterZone === zone.code}" onclick="filterZone('${custEscape(zone.code)}')">${custEscape(label)}</button>`;
+      }).join('');
     }
 
     function setFloorStatusFilter(status) {
@@ -3888,6 +3924,7 @@
     function renderFloorTables() {
       const container = document.getElementById('tables-container');
       container.innerHTML = '';
+      renderZoneFilters();
 
       let total = tables.length;
       let calling = 0;
@@ -3932,7 +3969,7 @@
       const mobileFloorControls = window.matchMedia('(max-width: 1100px)').matches;
       const searchInput = document.getElementById('floor-mobile-search-input');
       const searchText = mobileFloorControls ? String(searchInput?.value || '').trim().toLocaleLowerCase() : '';
-      const zoneTables = tables.filter(t => currentFilterZone === 'ALL' || t.zone === currentFilterZone);
+      const zoneTables = tables.filter(t => currentFilterZone === 'ALL' || String(t.zone || '').toUpperCase() === currentFilterZone);
       const statusFilterHost = document.getElementById('floor-mobile-status-filters');
       const resultCount = document.getElementById('floor-mobile-result-count');
 
@@ -4017,7 +4054,7 @@
             <div class="table-card-top">
               <div>
                 <div class="table-num">${t.number}</div>
-                <div class="table-subinfo">โซน ${t.zone} • 👥 ${t.seats} ที่นั่ง</div>
+                <div class="table-subinfo">${custEscape(storeZoneName(t.zone))} • 👥 ${Number(t.seats) || 0} ที่นั่ง</div>
               </div>
               ${badgeHtml}
             </div>
@@ -4036,7 +4073,7 @@
       if (!t) return;
       currentSelectedTableForAction = t;
       document.getElementById('table-modal-num').textContent = `โต๊ะ ${t.number}`;
-      document.getElementById('table-modal-desc').textContent = `โซน ${t.zone} • ${t.seats} ที่นั่ง • สถานะ: ${t.status}`;
+      document.getElementById('table-modal-desc').textContent = `${storeZoneName(t.zone)} • ${t.seats} ที่นั่ง • สถานะ: ${t.status}`;
       document.getElementById('table-action-modal').classList.add('open');
     }
 
@@ -4110,7 +4147,7 @@
 
     function openOrderModalForTable(tableNum) {
       const select = document.getElementById('order-table-select');
-      select.innerHTML = tables.map(t => `<option value="${t.number}" ${t.number === tableNum ? 'selected' : ''}>โต๊ะ ${t.number} (โซน ${t.zone})</option>`).join('');
+      select.innerHTML = tables.map(t => `<option value="${custEscape(t.number)}" ${t.number === tableNum ? 'selected' : ''}>โต๊ะ ${custEscape(t.number)} (${custEscape(storeZoneName(t.zone))})</option>`).join('');
 
       const menuBox = document.getElementById('order-menu-selection');
       const availableItems = menuItems.filter(isMenuAvailableForOrdering);
@@ -5654,10 +5691,10 @@
       const search = document.getElementById('manage-table-search-input');
       const zoneBar = document.getElementById('manage-table-zone-filters');
       const query = String(search ? search.value : '').trim().toLocaleLowerCase();
-      const zones = [...new Set(tables.map(table => String(table.zone || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+      const zones = getStoreZones().map(zone => zone.code);
       if (!window.manageTableZoneFilter) window.manageTableZoneFilter = 'ALL';
       if (window.manageTableZoneFilter !== 'ALL' && !zones.includes(window.manageTableZoneFilter)) window.manageTableZoneFilter = 'ALL';
-      if (zoneBar) zoneBar.innerHTML = [{ value: 'ALL', label: 'ทุกโซน' }, ...zones.map(zone => ({ value: zone, label: `โซน ${zone}` }))].map(zone =>
+      if (zoneBar) zoneBar.innerHTML = [{ value: 'ALL', label: 'ทุกโซน' }, ...zones.map(zone => ({ value: zone, label: `${storeZoneName(zone)} · ${zone}` }))].map(zone =>
         `<button type="button" class="manage-zone-chip${window.manageTableZoneFilter === zone.value ? ' active' : ''}" aria-pressed="${window.manageTableZoneFilter === zone.value}" onclick="setManageTableZone('${custEscape(zone.value)}')">${custEscape(zone.label)}</button>`
       ).join('');
       const filteredTables = tables.filter(table =>
@@ -5667,27 +5704,29 @@
       const results = document.getElementById('manage-table-results');
       if (results) results.textContent = query || window.manageTableZoneFilter !== 'ALL' ? `พบ ${filteredTables.length} จาก ${tables.length} โต๊ะ` : `ทั้งหมด ${tables.length} โต๊ะ`;
       grid.innerHTML = filteredTables.length ? filteredTables.map(t => `
-        <div class="table-card manage-table-card" style="cursor:pointer" onclick="openTableOrderPage('${t.number}')" title="คลิกเพื่อเปิดหน้าสั่งอาหารของโต๊ะ ${t.number}">
+        <div class="table-card manage-table-card" style="cursor:pointer" onclick="openTableOrderPage('${custEscape(t.number)}')" title="คลิกเพื่อเปิดหน้าสั่งอาหารของโต๊ะ ${custEscape(t.number)}">
           <div class="table-card-top">
             <div>
-              <div style="font-size: 24px; font-weight: 800;">${t.number}</div>
-              <div class="table-subinfo">โซน ${t.zone} • ${t.seats} ที่นั่ง</div>
+              <div style="font-size: 24px; font-weight: 800;">${custEscape(t.number)}</div>
+              <div class="table-subinfo">${custEscape(storeZoneName(t.zone))} • ${Number(t.seats) || 0} ที่นั่ง</div>
             </div>
             <span class="status-badge status-available">เปิดใช้งาน</span>
           </div>
           <div style="margin: 12px 0; text-align: center;">
-            <a href="${tableOrderUrl(t.number)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="เปิดหน้าสั่งอาหารโต๊ะ ${t.number}">
-              <img src="${tableQrImageUrl(t.number, 180)}" alt="QR สั่งอาหารโต๊ะ ${t.number}" width="112" height="112" loading="lazy" style="display:block;image-rendering:pixelated">
+            <a href="${tableOrderUrl(t.number)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="เปิดหน้าสั่งอาหารโต๊ะ ${custEscape(t.number)}">
+              <img src="${tableQrImageUrl(t.number, 180)}" alt="QR สั่งอาหารโต๊ะ ${custEscape(t.number)}" width="112" height="112" loading="lazy" style="display:block;image-rendering:pixelated">
             </a>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">สแกนเพื่อเลือกเมนูและสั่งอาหาร</div>
           </div>
           <div class="table-actions">
-            <button class="btn-tbl-action manage-mobile-open" style="display:none" onclick="event.stopPropagation(); openTableOrderPage('${t.number}')">🍽️ เปิดโต๊ะ</button>
+            <button class="btn-tbl-action manage-mobile-open" style="display:none" onclick="event.stopPropagation(); openTableOrderPage('${custEscape(t.number)}')">🍽️ เปิดโต๊ะ</button>
             <button class="btn-tbl-action" onclick="event.stopPropagation(); printTableTentCard('${t.id}')">🖨️ พิมพ์ป้าย</button>
-            <button class="action-icon-btn manage-table-delete" style="color: #ef4444;" aria-label="ลบโต๊ะ ${custEscape(t.number)}" onclick="event.stopPropagation(); deleteTable('${t.id}')">🗑️</button>
+            <button class="btn-tbl-action" data-owner-only="true" onclick="event.stopPropagation(); editTable('${custEscape(t.id)}')">✏️ แก้โต๊ะ</button>
+            <button class="action-icon-btn manage-table-delete" data-owner-only="true" style="color: #ef4444;" aria-label="ลบโต๊ะ ${custEscape(t.number)}" onclick="event.stopPropagation(); deleteTable('${custEscape(t.id)}')">🗑️</button>
           </div>
         </div>
       `).join('') : '<div class="manage-table-empty">ไม่พบโต๊ะที่ตรงกับการค้นหา</div>';
+      applyRoleAccess();
 
     }
 
@@ -5707,21 +5746,53 @@
     }
 
     function openAddTableModal() {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่เพิ่มโต๊ะได้');
       const input = prompt('กรอกหมายเลขโต๊ะใหม่ (เช่น A7, B5, S9):');
       if (!input) return;
       const num = input.trim().toUpperCase();
       if (!/^[A-Z0-9-]{1,20}$/.test(num)) { alert('ใช้ตัวอักษรอังกฤษ ตัวเลข หรือขีดกลาง ความยาวไม่เกิน 20 ตัว'); return; }
       if (tables.some(table => String(table.number).toUpperCase() === num)) { alert('มีหมายเลขโต๊ะนี้แล้ว'); return; }
-      const zone = prompt('โซน (S, A, B, VIP):', 'S') || 'S';
+      const zones = getStoreZones();
+      const choices = zones.map((zone, index) => `${index + 1}. ${zone.name} (${zone.code})`).join('\n');
+      const selection = prompt(`เลือกตำแหน่ง/โซน:\n${choices}\n\nพิมพ์เลขข้อหรือรหัสโซน`, zones[0]?.code || 'S');
+      if (!selection) return;
+      const selectedZone = zones.find((zone, index) => String(index + 1) === selection.trim() || zone.code === selection.trim().toUpperCase());
+      if (!selectedZone) return alert('ไม่พบโซนที่เลือก');
       const seats = parseInt(prompt('จำนวนที่นั่ง:', '4'), 10) || 4;
-      tables.push({ id: 'tbl_' + Date.now(), number: num, zone, seats, status: 'idle', callNote: '', callTime: null });
+      tables.push({ id: 'tbl_' + Date.now(), number: num, zone: selectedZone.code, seats, status: 'idle', callNote: '', callTime: null });
       saveState('SYNC');
       renderManageTables();
       renderFloorTables();
       showToast(`✅ เพิ่มโต๊ะ ${num} เรียบร้อยแล้ว`);
     }
 
+    function editTable(id) {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่แก้ไขโต๊ะได้');
+      const table = tables.find(item => String(item.id) === String(id));
+      if (!table) return;
+      const number = (prompt('หมายเลขโต๊ะ:', table.number) || '').trim().toUpperCase();
+      if (!number) return;
+      if (!/^[A-Z0-9-]{1,20}$/.test(number)) return alert('ใช้ตัวอักษรอังกฤษ ตัวเลข หรือขีดกลาง ความยาวไม่เกิน 20 ตัว');
+      if (tables.some(item => item !== table && String(item.number).toUpperCase() === number)) return alert('มีหมายเลขโต๊ะนี้แล้ว');
+      const zones = getStoreZones();
+      const choiceList = zones.map((zone, index) => `${index + 1}. ${zone.name} (${zone.code})`).join('\n');
+      const defaultZone = zones.find(zone => zone.code === String(table.zone).toUpperCase())?.code || zones[0]?.code;
+      const selection = prompt(`เลือกตำแหน่ง/โซน:\n${choiceList}\n\nพิมพ์เลขข้อหรือรหัสโซน`, defaultZone);
+      if (!selection) return;
+      const zone = zones.find((item, index) => String(index + 1) === selection.trim() || item.code === selection.trim().toUpperCase());
+      if (!zone) return alert('ไม่พบโซนที่เลือก');
+      const seatsValue = prompt('จำนวนที่นั่ง:', String(table.seats || 4));
+      if (seatsValue === null) return;
+      const seats = Number(seatsValue);
+      if (!Number.isInteger(seats) || seats < 1) return alert('จำนวนที่นั่งต้องเป็นเลขตั้งแต่ 1 ขึ้นไป');
+      Object.assign(table, { number, zone: zone.code, seats });
+      saveState('SYNC');
+      renderManageTables(); renderFloorTables();
+      showToast(`บันทึกโต๊ะ ${number} แล้ว`);
+    }
+
     function deleteTable(id) {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่ลบโต๊ะได้');
       if (!confirm('ต้องการลบโต๊ะนี้หรือไม่?')) return;
       tables = tables.filter(t => t.id !== id);
       saveState('SYNC');
@@ -5810,23 +5881,68 @@
 
     function renderZones() {
       const container = document.getElementById('zones-list-container');
-      const zones = [
-        { code: 'S', name: 'โซน S (หน้าร้าน)', count: tables.filter(t => t.zone === 'S').length },
-        { code: 'A', name: 'โซน A (ห้องแอร์)', count: tables.filter(t => t.zone === 'A').length },
-        { code: 'B', name: 'โซน B (ระเบียง)', count: tables.filter(t => t.zone === 'B').length },
-        { code: 'VIP', name: 'โซน VIP', count: tables.filter(t => t.zone === 'VIP').length }
-      ];
-      container.innerHTML = zones.map(z => `
+      const zones = getStoreZones();
+      container.innerHTML = zones.map(zone => {
+        const count = tables.filter(table => String(table.zone || '').toUpperCase() === zone.code).length;
+        return `
         <div style="padding: 16px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px;">
-          <h4 style="font-size: 15px; font-weight: 800;">${z.name}</h4>
-          <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">มีทั้งหมด ${z.count} โต๊ะ</div>
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div><h4 style="font-size: 15px; font-weight: 800; margin:0">${custEscape(zone.name)}</h4><small style="color:var(--text-muted)">รหัส ${custEscape(zone.code)}</small></div>
+            <span class="status-badge status-available">${count} โต๊ะ</span>
+          </div>
+          <div class="table-actions" style="margin-top:12px">
+            <button type="button" class="btn-tbl-action" data-owner-only="true" onclick="editStoreZone('${custEscape(zone.code)}')">✏️ แก้ไข</button>
+            <button type="button" class="btn-tbl-action" data-owner-only="true" style="color:var(--danger)" onclick="deleteStoreZone('${custEscape(zone.code)}')" ${count ? 'disabled title="ย้ายโต๊ะออกจากโซนนี้ก่อน"' : ''}>🗑️ ลบ</button>
+          </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
+      applyRoleAccess();
     }
 
     function openAddZoneModal() {
-      const name = prompt('ชื่อโซนใหม่:');
-      if (name) showToast(`เพิ่มโซน ${name} แล้ว`);
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่จัดการโซนได้');
+      const code = (prompt('รหัสโซนสั้น ๆ เช่น FRONT, BACK, IN:', '') || '').trim().toUpperCase();
+      if (!code) return;
+      if (!/^[A-Z0-9_-]{1,12}$/.test(code)) return alert('รหัสโซนใช้ A-Z, 0-9, _ หรือ - ได้ ไม่เกิน 12 ตัว');
+      const zones = getStoreZones();
+      if (zones.some(zone => zone.code === code)) return alert('รหัสโซนนี้มีอยู่แล้ว');
+      const name = (prompt('ชื่อโซนที่จะแสดง เช่น หน้าร้าน / หลังร้าน / ในร้าน:', '') || '').trim();
+      if (!name) return;
+      storeSettings.zones = [...zones, { code, name }];
+      saveStoreZones(`เพิ่มโซน ${name} แล้ว`);
+    }
+
+    function editStoreZone(code) {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่จัดการโซนได้');
+      const zones = getStoreZones();
+      const zone = zones.find(item => item.code === String(code).toUpperCase());
+      if (!zone) return;
+      const name = (prompt(`แก้ชื่อโซน ${zone.code}:`, zone.name) || '').trim();
+      if (!name || name === zone.name) return;
+      storeSettings.zones = zones.map(item => item.code === zone.code ? { ...item, name } : item);
+      saveStoreZones(`แก้ชื่อโซนเป็น ${name} แล้ว`);
+    }
+
+    function deleteStoreZone(code) {
+      if (!isStoreOwner()) return showToast('เฉพาะเจ้าของร้านเท่านั้นที่จัดการโซนได้');
+      const zones = getStoreZones();
+      const zone = zones.find(item => item.code === String(code).toUpperCase());
+      if (!zone) return;
+      if (tables.some(table => String(table.zone || '').toUpperCase() === zone.code)) return alert('ลบไม่ได้ เพราะยังมีโต๊ะอยู่ในโซนนี้ กรุณาย้ายโต๊ะก่อน');
+      if (zones.length <= 1) return alert('ต้องเหลืออย่างน้อย 1 โซน');
+      if (!confirm(`ลบโซน ${zone.name} (${zone.code}) ใช่หรือไม่?`)) return;
+      storeSettings.zones = zones.filter(item => item.code !== zone.code);
+      saveStoreZones(`ลบโซน ${zone.name} แล้ว`);
+    }
+
+    function saveStoreZones(message) {
+      storeSettings.zones = getStoreZones();
+      saveState('SYNC');
+      renderZones();
+      renderFloorTables();
+      renderManageTables();
+      showToast(message);
     }
 
     // 18.17 SETTINGS
@@ -5922,7 +6038,7 @@
     // 18.18 CUSTOMER SIMULATOR (MOBILE VIEW)
     function openCustomerSimulatorModal() {
       const select = document.getElementById('sim-table-select');
-      select.innerHTML = tables.map(t => `<option value="${t.number}">โต๊ะ ${t.number} (โซน ${t.zone})</option>`).join('');
+      select.innerHTML = tables.map(t => `<option value="${custEscape(t.number)}">โต๊ะ ${custEscape(t.number)} (${custEscape(storeZoneName(t.zone))})</option>`).join('');
       document.getElementById('customer-sim-modal').classList.add('open');
     }
 
@@ -6126,6 +6242,12 @@
       const tableParam = params.get('table');
       const viewParam = params.get('view');
       const customerView = viewParam === 'customer' || !!tableParam;
+      if (customerView) {
+        // QR customers must never see an old localStorage menu as a fallback.
+        tables = [];
+        menuItems = [];
+        menuCategories = [];
+      }
 
       if (!customerView) {
         let sessionValid = false;
@@ -6149,6 +6271,9 @@
 
       try {
         const remoteState = await tableCallGas('getPOSState');
+        if (customerView && (!remoteState || !Array.isArray(remoteState.tables) || !Array.isArray(remoteState.menuItems))) {
+          throw new Error('ยังไม่มีข้อมูลโต๊ะและเมนูจาก Google Sheets');
+        }
         remotePOSAvailable = true;
         if (remoteState) {
           applyPOSState(remoteState);
@@ -6190,8 +6315,10 @@
         if (!remotePOSAvailable) {
           const feedback = document.getElementById('cust-call-feedback');
           feedback.style.display = 'block';
-          feedback.textContent = 'เชื่อมต่อระบบร้านไม่ได้ กรุณาแจ้งพนักงาน';
+          feedback.textContent = 'เชื่อมต่อฐานข้อมูลเมนูของร้านไม่ได้ จึงปิดรายการอาหารไว้ก่อน กรุณาลองโหลดหน้าใหม่หรือติดต่อพนักงาน';
         }
+        if (customerCatalogSyncTimer) clearInterval(customerCatalogSyncTimer);
+        customerCatalogSyncTimer = setInterval(refreshCustomerOrderingData, 10000);
       } else {
         if (remotePOSAvailable) pollPOSOrders();
         if (!posCloudSyncTimer) posCloudSyncTimer = setInterval(reconnectAndSyncPOS, 10000);
@@ -6224,8 +6351,16 @@
       document.getElementById('customer-order-page').classList.add('active');
       document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
       document.getElementById('cust-table-badge').textContent = custTableNumber ? `โต๊ะ ${custTableNumber}` : 'โต๊ะ —';
-      const table = tables.find(tb => String(tb.number) === custTableNumber);
       const feedback = document.getElementById('cust-call-feedback');
+      if (!remotePOSAvailable) {
+        feedback.style.display = 'block';
+        feedback.textContent = 'ยังเชื่อมต่อฐานข้อมูลร้านไม่ได้ จึงไม่แสดงเมนูที่อาจไม่เป็นปัจจุบัน';
+        document.getElementById('cust-menu-grid').innerHTML = '<div class="cust-empty">กำลังรอเชื่อมต่อข้อมูลเมนูจากร้าน...</div>';
+        document.getElementById('cust-send-order-btn').disabled = true;
+        document.getElementById('cust-send-order-btn').textContent = 'ยังไม่พร้อมสั่งอาหาร';
+        return;
+      }
+      const table = tables.find(tb => String(tb.number) === custTableNumber);
       if (!table || table.active === false) {
         feedback.style.display = 'block';
         feedback.textContent = 'ไม่พบโต๊ะนี้หรือโต๊ะถูกปิดใช้งาน กรุณาสแกน QR Code ใหม่';
@@ -6234,16 +6369,75 @@
         return;
       }
       document.getElementById('cust-guest-count').value = Math.max(1, Number(table.seats) || 1);
-      const orderableItems = menuItems.filter(isMenuAvailableForOrdering);
-      const cats = ['ทั้งหมด', ...new Set(orderableItems.map(m => m.category).filter(Boolean))];
-      const scroll = document.getElementById('cust-cat-scroll');
-      scroll.innerHTML = cats.map((category, index) => `<button class="cust-cat-pill${index === 0 ? ' active' : ''}" data-category="${custEscape(category)}" onclick="custFilterCat(this.dataset.category, this)">${custEscape(category)}</button>`).join('');
+      renderCustomerCategoryPills();
       custRenderMenu('ทั้งหมด');
       custUpdateCartBar();
     }
+
+    function renderCustomerCategoryPills() {
+      const orderableItems = menuItems.filter(isMenuAvailableForOrdering);
+      const categories = ['ทั้งหมด', ...new Set(orderableItems.map(item => String(item.category || '').trim()).filter(Boolean))];
+      if (!categories.includes(customerSelectedCategory)) customerSelectedCategory = 'ทั้งหมด';
+      document.getElementById('cust-cat-scroll').innerHTML = categories.map(category =>
+        `<button type="button" class="cust-cat-pill${category === customerSelectedCategory ? ' active' : ''}" data-category="${custEscape(category)}" onclick="custFilterCat(this.dataset.category, this)">${custEscape(category)}</button>`
+      ).join('');
+    }
+
+    let customerSelectedCategory = 'ทั้งหมด';
+
+    async function refreshCustomerOrderingData() {
+      if (!TABLECALL_IS_CUSTOMER) return;
+      try {
+        const state = await tableCallGas('getPOSState');
+        if (!state || !Array.isArray(state.tables) || !Array.isArray(state.menuItems)) throw new Error('ฐานข้อมูลยังไม่ได้ส่งเมนูและโต๊ะ');
+        applyPOSState(state);
+        remotePOSAvailable = true;
+        const menuById = new Map(menuItems.map(item => [String(item.id), item]));
+        custCart = custCart.flatMap(entry => {
+          const menu = menuById.get(String(entry.id));
+          if (!menu || !isMenuAvailableForOrdering(menu)) return [];
+          const options = availableNoodleOptions(menu);
+          let noodleChoice = entry.noodleChoice;
+          if (isNoodleMenu(menu)) {
+            const selected = options.find(option => String(option.id) === String(noodleChoice && noodleChoice.id));
+            const choice = selected || options[0];
+            if (!choice) return [];
+            noodleChoice = { id: String(choice.id), name: String(choice.name) };
+          } else noodleChoice = null;
+          const soups = (Array.isArray(menu.soupOptions) ? menu.soupOptions : []).filter(option => option && option.available !== false);
+          const soup = soups.find(option => String(option.id) === String(entry.soupChoice && entry.soupChoice.id)) || soups[0];
+          const addonIds = new Set((entry.addons || []).map(addon => String(addon.id)));
+          const addons = (Array.isArray(menu.addons) ? menu.addons : []).filter(addon => addon.available !== false && addonIds.has(String(addon.id))).map(addon => ({ id: String(addon.id), name: addon.name, price: Number(addon.price) || 0 }));
+          const basePrice = Number(menu.price) || 0;
+          return [{ ...entry, name: menu.name, basePrice, price: basePrice + addons.reduce((sum, addon) => sum + addon.price, 0), addons, ...(noodleChoice ? { noodleChoice } : {}), ...(soup ? { soupChoice: { id: String(soup.id), name: String(soup.name) } } : { soupChoice: null }) }];
+        });
+        const table = tables.find(item => String(item.number) === custTableNumber);
+        if (!table || table.active === false) throw new Error('ไม่พบโต๊ะนี้หรือโต๊ะถูกปิดใช้งาน');
+        document.getElementById('cust-store-name').textContent = '🍽️ ' + (storeSettings.name || 'ร้านอาหาร');
+        document.getElementById('cust-guest-count').value = Math.max(1, Number(table.seats) || 1);
+        document.getElementById('cust-call-feedback').style.display = 'none';
+        renderCustomerCategoryPills();
+        custRenderMenu(customerSelectedCategory);
+        custUpdateCartBar();
+      } catch (error) {
+        remotePOSAvailable = false;
+        tables = [];
+        menuItems = [];
+        custCart = [];
+        renderCustomerCategoryPills();
+        custRenderMenu('ทั้งหมด');
+        custUpdateCartBar();
+        const feedback = document.getElementById('cust-call-feedback');
+        feedback.style.display = 'block';
+        feedback.textContent = 'เชื่อมต่อฐานข้อมูลเมนูไม่ได้ จึงซ่อนเมนูไว้เพื่อไม่ให้สั่งรายการที่ไม่มีหรือไม่พร้อมขาย';
+        document.getElementById('cust-send-order-btn').disabled = true;
+        document.getElementById('cust-send-order-btn').textContent = 'เชื่อมต่อเมนูไม่ได้';
+      }
+    }
     function custFilterCat(cat, btn) {
+      customerSelectedCategory = cat;
       document.querySelectorAll('.cust-cat-pill').forEach(pill => pill.classList.remove('active'));
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
       custRenderMenu(cat);
     }
     function custRenderMenu(cat) {
@@ -6306,12 +6500,13 @@
       document.getElementById('cust-cart-count').textContent = `${count} รายการ`;
       document.getElementById('cust-cart-total').textContent = custMoney(total);
       const button = document.getElementById('cust-send-order-btn');
-      button.disabled = count === 0;
-      button.textContent = count ? 'ยืนยันสั่งอาหาร' : 'เลือกเมนูก่อนสั่ง';
+      button.disabled = count === 0 || !remotePOSAvailable;
+      button.textContent = !remotePOSAvailable ? 'เชื่อมต่อเมนูไม่ได้' : (count ? 'ยืนยันสั่งอาหาร' : 'เลือกเมนูก่อนสั่ง');
     }
     async function custSendOrder() {
       const button = document.getElementById('cust-send-order-btn');
       const feedback = document.getElementById('cust-call-feedback');
+      if (!remotePOSAvailable) { feedback.style.display = 'block'; feedback.textContent = 'ยังเชื่อมต่อฐานข้อมูลร้านไม่ได้ กรุณาลองอีกครั้ง'; return; }
       if (!custCart.length) { feedback.style.display = 'block'; feedback.textContent = 'เลือกเมนูอย่างน้อย 1 รายการก่อนยืนยัน'; return; }
       const note = document.getElementById('cust-order-note').value.trim();
       const guestCount = Math.max(1, Math.min(50, Number(document.getElementById('cust-guest-count').value) || 1));
