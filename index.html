@@ -5307,7 +5307,7 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn-tbl-action" style="flex: 2;" onclick="toggleStaffShift('${s.id}')">
-              ${s.status === 'active' ? '🚪 ลงเวลาออกงาน' : '⏱️ เริ่มเข้างาน'}
+              ${s.status === 'active' ? '🚪 ลงเวลาออก' : '⏱️ ลงเวลางาน'}
             </button>
             <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteStaff('${s.id}')">🗑️</button>
           </div>
@@ -5419,7 +5419,7 @@
             ${shift ? `🟢 กำลังทำงาน · เข้างาน ${custEscape(shift.clock_in)}` : '⚪ ยังไม่ได้ลงเวลาเข้างานวันนี้'}
           </div>
           <div style="display:flex;gap:8px;align-items:center">
-            ${ownAccount ? `<button class="btn-primary" style="flex:1;min-height:44px;justify-content:center" onclick="toggleStaffShift()">${shift ? '🚪 ลงเวลาออกงาน' : '⏱️ ลงเวลาเข้างาน'}</button>` : ''}
+            ${ownAccount ? `<button class="btn-primary" style="flex:1;min-height:44px;justify-content:center" onclick="toggleStaffShift(this)">${shift ? '🚪 ลงเวลาออก' : '⏱️ ลงเวลางาน'}</button>` : ''}
             ${isOwner && employee.role !== 'owner' ? `<button class="action-icon-btn" style="color:#ef4444;min-width:44px;min-height:44px" aria-label="ปิดใช้งานพนักงาน" title="ปิดใช้งานบัญชีพนักงาน" onclick="deleteStaff('${custEscape(employee.employee_id)}')">🗑️</button>` : ''}
           </div>
         </article>`;
@@ -5473,8 +5473,18 @@
       }
     }
 
-    function toggleStaffShift() {
-      tableCallGas('clockStaff', {}, true).then(result => refreshEmployeeData().then(() => showToast(result.action === 'clock_in' ? 'บันทึกเวลาเข้างานแล้ว' : 'บันทึกเวลาออกงานแล้ว'))).catch(err => showToast(`บันทึกเวลาไม่สำเร็จ: ${err.message}`));
+    async function toggleStaffShift(button) {
+      if (button && button.disabled) return;
+      const originalLabel = button ? button.textContent : '';
+      if (button) { button.disabled = true; button.textContent = 'กำลังบันทึก…'; }
+      try {
+        const result = await tableCallGas('clockStaff', {}, true);
+        await refreshEmployeeData();
+        showToast(result.action === 'clock_in' ? 'บันทึกเวลาเข้างานแล้ว' : 'บันทึกเวลาออกแล้ว');
+      } catch (err) {
+        showToast(`บันทึกเวลาไม่สำเร็จ: ${err.message}`);
+        if (button) { button.disabled = false; button.textContent = originalLabel; }
+      }
     }
 
     function deleteStaff(id) {
