@@ -146,6 +146,29 @@
       align-items: center;
       justify-content: center;
     }
+    .sidebar-brand-icon::before, .sidebar-item .item-icon::before, .stat-icon[data-glyph]::before, .css-icon::before {
+      content: attr(data-glyph);
+      display: inline-grid;
+      place-items: center;
+      font-family: Arial, sans-serif;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .sidebar-brand-icon::before { font-size: 19px; }
+    .sidebar-item .item-icon::before { font-size: 17px; }
+    .stat-icon[data-glyph]::before { font-size: 23px; }
+    .css-icon { display:inline-flex; align-items:center; justify-content:center; width:1.15em; height:1.15em; vertical-align:-.15em; }
+    .css-icon::before { font-size:1em; }
+    .staff-avatar-icon { display:grid; place-items:center; width:42px; height:42px; border-radius:50%; background:#eef2ff; color:#4338ca; font-size:17px; font-weight:700; }
+    .action-icon-btn[title*="แก้ไข"]::before, .action-icon-btn[aria-label*="แก้ไข"]::before { content:"✎"; }
+    .action-icon-btn[title*="ลบ"]::before, .action-icon-btn[aria-label*="ลบ"]::before, .action-icon-btn[title*="ปิดใช้งาน"]::before { content:"×"; }
+    .action-icon-btn[title*="เปลี่ยนสถานะ"]::before { content:"↻"; }
+    .action-icon-btn[title*="ใบเสร็จ"]::before, .action-icon-btn[aria-label*="ใบเสร็จ"]::before { content:"▤"; }
+    .action-icon-btn[data-glyph]::before { content:attr(data-glyph); }
+    .btn-header-action[onclick*="openCustomerSimulatorModal"]::before { content:"▦"; font:600 15px Arial,sans-serif; }
+    .mobile-menu-icon { position:relative; font-size:0; }
+    .mobile-menu-icon::before { content:""; display:block; width:18px; height:14px; background:linear-gradient(currentColor,currentColor) 0 0/18px 2px no-repeat,linear-gradient(currentColor,currentColor) 0 6px/18px 2px no-repeat,linear-gradient(currentColor,currentColor) 0 12px/18px 2px no-repeat; }
 
     .sidebar-item .item-badge {
       margin-left: auto;
@@ -888,6 +911,10 @@
       font-size: 24px;
     }
 
+    .dashboard-sales-summary { display:flex; flex-wrap:wrap; gap:8px 20px; margin:0 0 8px; color:var(--text-muted); font-size:13px; }
+    .dashboard-sales-summary strong { color:var(--text-main); font-size:16px; }
+    .dashboard-sales-chart { display:grid; grid-template-columns:repeat(12,minmax(38px,1fr)); gap:12px 8px; padding:12px 2px 8px; border-bottom:1px solid var(--border-color); overflow-x:auto; }
+
     .stat-info h3 {
       font-size: 22px;
       font-weight: 800;
@@ -1462,86 +1489,86 @@
   <!-- ── 1. LEFT SIDEBAR (DARK NAVY) ── -->
   <aside id="sidebar">
     <div class="sidebar-brand" onclick="switchNav('floor')">
-      <span class="sidebar-brand-icon"></span>
+      <span class="sidebar-brand-icon" data-glyph="⌂" aria-hidden="true"></span>
       <span id="sidebar-brand-text">ร้านก๋วยเตี๋ยวเรือ รงค์เรือ</span>
     </div>
 
     <nav class="sidebar-menu">
       <div class="menu-group-title">หลัก</div>
       <a class="sidebar-item" data-view="dashboard" data-owner-only="true" onclick="switchNav('dashboard')">
-        <span class="item-icon">⊞</span>
+        <span class="item-icon" data-glyph="▦" aria-hidden="true"></span>
         <span>แดชบอร์ด</span>
       </a>
       <a class="sidebar-item active" data-view="floor" onclick="switchNav('floor')">
-        <span class="item-icon">▦</span>
+        <span class="item-icon" data-glyph="▤" aria-hidden="true"></span>
         <span>โต๊ะอาหาร</span>
         <span class="item-badge" id="sidebar-calls-badge" style="display: none;">0</span>
       </a>
       <a class="sidebar-item" data-view="orders" onclick="switchNav('orders')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="≡" aria-hidden="true"></span>
         <span>ออเดอร์</span>
         <span class="item-badge" id="sidebar-orders-badge" style="display: none; background: #6366f1;">0</span>
       </a>
       <a class="sidebar-item" data-view="kds" onclick="switchNav('kds')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▣" aria-hidden="true"></span>
         <span>หน้าจอครัว (KDS)</span>
         <span class="item-badge" id="sidebar-kds-badge" style="display: none; background: #ea580c;">0</span>
       </a>
       <a class="sidebar-item" data-view="billing" onclick="switchNav('billing')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▤" aria-hidden="true"></span>
         <span>เช็คบิล / ชำระเงิน</span>
       </a>
 
       <div class="menu-group-title">จัดการ</div>
       <a class="sidebar-item" data-view="menu" onclick="switchNav('menu')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▤" aria-hidden="true"></span>
         <span>เมนูอาหาร</span>
       </a>
       <a class="sidebar-item" data-view="table-settings" onclick="switchNav('table-settings')">
-        <span class="item-icon">▦</span>
+        <span class="item-icon" data-glyph="▦" aria-hidden="true"></span>
         <span>จัดการโต๊ะ</span>
       </a>
       <a class="sidebar-item" data-view="zones" onclick="switchNav('zones')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="⌖" aria-hidden="true"></span>
         <span>โซน</span>
       </a>
 
 
       <div class="menu-group-title">บุคลากร</div>
       <a class="sidebar-item" data-view="staff" onclick="switchNav('staff')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="♙" aria-hidden="true"></span>
         <span>พนักงาน</span>
       </a>
       <a class="sidebar-item" data-view="attendance" onclick="switchNav('attendance')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="◷" aria-hidden="true"></span>
         <span>ลงเวลา</span>
       </a>
 
       <div class="menu-group-title">รายงาน</div>
       <a class="sidebar-item" data-view="sales-report" onclick="switchNav('sales-report')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▥" aria-hidden="true"></span>
         <span>รายงานยอดขาย</span>
       </a>
       <a class="sidebar-item" data-view="best-sellers" onclick="switchNav('best-sellers')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▤" aria-hidden="true"></span>
         <span>สินค้าขายดี</span>
       </a>
       <a class="sidebar-item" data-view="profit-loss" data-owner-only="true" onclick="switchNav('profit-loss')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="↗" aria-hidden="true"></span>
         <span>กำไร/ขาดทุน</span>
       </a>
 
       <div class="menu-group-title">ตั้งค่าระบบ</div>
       <a class="sidebar-item" data-view="settings" onclick="switchNav('settings')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="⚙︎" aria-hidden="true"></span>
         <span>ตั้งค่าทั่วไป</span>
       </a>
       <a class="sidebar-item" data-view="printers" onclick="switchNav('printers')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="▣" aria-hidden="true"></span>
         <span>เครื่องพิมพ์</span>
       </a>
       <a class="sidebar-item" data-view="backup" onclick="switchNav('backup')">
-        <span class="item-icon"></span>
+        <span class="item-icon" data-glyph="↧" aria-hidden="true"></span>
         <span>สำรองข้อมูล</span>
       </a>
     </nav>
@@ -1552,7 +1579,7 @@
   <div id="main-wrapper">
     <!-- Top Bar -->
     <header id="top-bar">
-      <button id="mobile-nav-toggle" onclick="toggleMobileNav()" aria-label="เปิดเมนู" aria-expanded="false">☰</button>
+      <button id="mobile-nav-toggle" class="mobile-menu-icon" onclick="toggleMobileNav()" aria-label="เปิดเมนู" aria-expanded="false"></button>
       <div class="header-left">
         <div class="page-title" id="page-breadcrumb-title">โต๊ะอาหาร</div>
         <div class="page-date" id="top-current-date">29 พ.ค. 2569</div>
@@ -1594,7 +1621,7 @@
       <section id="view-floor" class="view-section active">
         <div class="stats-bar">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #f1f5f9; color: #475569;"></div>
+            <div class="stat-icon" data-glyph="▦" style="background: #f1f5f9; color: #475569;"></div>
             <div class="stat-info">
               <h3 id="stat-total-tables">20</h3>
               <p>โต๊ะทั้งหมด</p>
@@ -1608,14 +1635,14 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #f0f9ff; color: #0284c7;"></div>
+            <div class="stat-icon" data-glyph="◷" style="background: #f0f9ff; color: #0284c7;"></div>
             <div class="stat-info">
               <h3 id="stat-bill-tables" style="color: #0284c7;">0</h3>
               <p>ขอเช็คบิล</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #ecfdf5; color: #059669;"></div>
+            <div class="stat-icon" data-glyph="▤" style="background: #ecfdf5; color: #059669;"></div>
             <div class="stat-info">
               <h3 id="stat-available-tables" style="color: #059669;">20</h3>
               <p>โต๊ะว่าง</p>
@@ -1749,49 +1776,49 @@
       <section id="view-dashboard" class="view-section" data-owner-only="true">
         <div class="stats-bar">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;"></div>
+            <div class="stat-icon" data-glyph="฿" style="background: #eef2ff; color: #4f46e5;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-sales">฿0.00</h3>
               <p>ยอดขายวันนี้</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #ecfdf5; color: #059669;"></div>
+            <div class="stat-icon" data-glyph="≡" style="background: #ecfdf5; color: #059669;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-orders">0</h3>
               <p>จำนวนออเดอร์</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #fffbeb; color: #d97706;"></div>
+            <div class="stat-icon" data-glyph="▦" style="background: #fffbeb; color: #d97706;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-tables">0 / 20</h3>
               <p>โต๊ะที่กำลังใช้</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #fdf2f8; color: #db2777;"></div>
+            <div class="stat-icon" data-glyph="♙" style="background: #fdf2f8; color: #db2777;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-members">0 สมาชิก</h3>
               <p>สมาชิกร้านทั้งหมด</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #eff6ff; color: #2563eb;"></div>
+            <div class="stat-icon" data-glyph="↗" style="background: #eff6ff; color: #2563eb;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-link-orders">0</h3>
               <p>ออเดอร์จากลิงก์/QR วันนี้</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #f0fdfa; color: #0f766e;"></div>
+            <div class="stat-icon" data-glyph="♙" style="background: #f0fdfa; color: #0f766e;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-link-guests">0 คน</h3>
               <p>ลูกค้าที่แจ้งผ่านลิงก์วันนี้</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #fff7ed; color: #c2410c;"></div>
+            <div class="stat-icon" data-glyph="▤" style="background: #fff7ed; color: #c2410c;"></div>
             <div class="stat-info">
               <h3 id="dash-stat-link-items">0 รายการ</h3>
               <p>อาหารที่สั่งผ่านลิงก์วันนี้</p>
@@ -1801,23 +1828,26 @@
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
           <div class="content-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-              <div class="card-title" id="dash-hourly-title">ยอดขายรายชั่วโมง</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+              <div class="card-title">ยอดขายรายวัน</div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <label for="dash-sales-period" style="font-size:13px;color:var(--text-muted);">ดูข้อมูล</label>
-                <select class="form-input" id="dash-sales-period" onchange="updateDashboardSalesPeriod()" style="width:auto;min-width:130px;padding:8px 10px;">
-                  <option value="day">ยอดขายรายวัน</option>
-                  <option value="month">ยอดขายรายเดือน</option>
-                </select>
+                <label for="dash-sales-date" style="font-size:13px;color:var(--text-muted);">เลือกวันที่</label>
                 <input class="form-input" id="dash-sales-date" type="date" title="วันที่สำหรับยอดรายวัน" aria-label="วันที่สำหรับยอดรายวัน" onchange="renderDashboardSalesPeriod()" style="width:auto;padding:8px 10px;">
-                <input class="form-input" id="dash-sales-month" type="month" title="เดือนสำหรับยอดรวมรายเดือน" aria-label="เดือนสำหรับยอดรวมรายเดือน" onchange="renderDashboardSalesPeriod()" style="width:auto;padding:8px 10px;">
-                <button class="btn-tbl-action" onclick="exportDashboardSalesPdf()" style="padding:8px 12px;white-space:nowrap;">พิมพ์ / บันทึก PDF</button>
+                <button class="btn-tbl-action" onclick="exportDashboardSalesPdf('day')" style="padding:8px 12px;white-space:nowrap;"><span class="css-icon" data-glyph="▤" aria-hidden="true"></span> พิมพ์ PDF รายวัน</button>
               </div>
             </div>
-            <div id="dash-sales-period-summary" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;"></div>
-            <div id="dash-hourly-chart" style="display:grid;grid-template-columns:repeat(12,minmax(38px,1fr));gap:12px 8px;padding:12px 2px 8px;border-bottom:1px solid var(--border-color);overflow-x:auto;">
-              <!-- Rendered dynamically based on paid sales in the selected period -->
+            <div id="dash-sales-day-summary" class="dashboard-sales-summary"></div>
+            <div id="dash-hourly-chart" class="dashboard-sales-chart" aria-label="กราฟยอดขายรายชั่วโมง"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 12px;padding-top:18px;border-top:1px solid var(--border-color);">
+              <div class="card-title">ยอดรวมรายเดือน</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <label for="dash-sales-month" style="font-size:13px;color:var(--text-muted);">เลือกเดือน</label>
+                <input class="form-input" id="dash-sales-month" type="month" title="เดือนสำหรับยอดรวมรายเดือน" aria-label="เดือนสำหรับยอดรวมรายเดือน" onchange="renderDashboardSalesPeriod()" style="width:auto;padding:8px 10px;">
+                <button class="btn-tbl-action" onclick="exportDashboardSalesPdf('month')" style="padding:8px 12px;white-space:nowrap;"><span class="css-icon" data-glyph="▤" aria-hidden="true"></span> พิมพ์ PDF รายเดือน</button>
+              </div>
             </div>
+            <div id="dash-sales-month-summary" class="dashboard-sales-summary"></div>
+            <div id="dash-monthly-chart" class="dashboard-sales-chart" aria-label="กราฟยอดขายรายวันในเดือน"></div>
           </div>
 
           <div class="content-card">
@@ -2256,21 +2286,21 @@
           <div class="card-title" style="margin-bottom: 20px;"> สรุปกำไร / ขาดทุน</div>
           <div class="stats-bar">
             <div class="stat-card">
-              <div class="stat-icon" style="background: #ecfdf5; color: #059669;"></div>
+              <div class="stat-icon" data-glyph="↗" style="background: #ecfdf5; color: #059669;"></div>
               <div class="stat-info">
                 <h3 id="pl-total-sales" style="color: #059669;">฿0.00</h3>
                 <p>รายรับทั้งหมด (ยอดขาย)</p>
               </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon" style="background: #fff1f2; color: #e11d48;"></div>
+              <div class="stat-icon" data-glyph="−" style="background: #fff1f2; color: #e11d48;"></div>
               <div class="stat-info">
                 <h3 id="pl-total-expenses" style="color: #e11d48;">฿0.00</h3>
                 <p>รายจ่ายทั้งหมด</p>
               </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon" style="background: #eef2ff; color: #4338ca;"></div>
+              <div class="stat-icon" data-glyph="＝" style="background: #eef2ff; color: #4338ca;"></div>
               <div class="stat-info">
                 <h3 id="pl-net-profit" style="color: #4338ca;">฿0.00</h3>
                 <p>กำไรสุทธิ</p>
@@ -3828,67 +3858,50 @@
     }
 
     function renderDashboardSalesPeriod() {
-      const chart = document.getElementById('dash-hourly-chart');
-      const periodSelect = document.getElementById('dash-sales-period');
-      if (!chart || !periodSelect) return;
-      const isMonth = periodSelect.value === 'month';
+      const dayChart = document.getElementById('dash-hourly-chart');
+      const monthChart = document.getElementById('dash-monthly-chart');
+      if (!dayChart || !monthChart) return;
       const selectedDay = document.getElementById('dash-sales-date').value;
       const selectedMonth = document.getElementById('dash-sales-month').value;
-      const selectedPeriod = isMonth ? selectedMonth : selectedDay;
-      const monthLabel = selectedMonth ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) : '';
       const dayLabel = selectedDay ? new Date(`${selectedDay}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-      const label = isMonth ? monthLabel : dayLabel;
-      document.getElementById('dash-hourly-title').textContent = isMonth ? 'ยอดขายรายวันในเดือนที่เลือก' : 'ยอดขายรายชั่วโมงในวันที่เลือก';
-
-      if (!selectedPeriod) {
-        document.getElementById('dash-sales-period-summary').textContent = 'กรุณาเลือกวันที่หรือเดือน';
-        chart.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);padding:18px 0;">ยังไม่มีข้อมูล</div>';
-        return;
-      }
-
-      const periodOrders = orders.filter(order => {
-        if (order.status !== 'paid') return false;
-        const date = dashboardOrderDate(order);
-        if (!date) return false;
-        return isMonth ? dashboardDateKey(date).startsWith(selectedMonth) : dashboardDateKey(date) === selectedDay;
-      });
-      const total = periodOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-      const selectedDayOrders = orders.filter(order => order.status === 'paid' && dashboardDateKey(dashboardOrderDate(order) || new Date(0)) === selectedDay);
-      const selectedDayTotal = selectedDayOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-      const selectedMonthOrders = orders.filter(order => {
-        if (order.status !== 'paid' || !selectedMonth) return false;
-        const date = dashboardOrderDate(order);
-        return date && dashboardDateKey(date).startsWith(selectedMonth);
-      });
-      const selectedMonthTotal = selectedMonthOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-      const chartValues = isMonth
-        ? Array.from({ length: new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)), 0).getDate() }, (_, index) => {
-          const dateKey = `${selectedMonth}-${String(index + 1).padStart(2, '0')}`;
-          const dayOrders = periodOrders.filter(order => dashboardDateKey(dashboardOrderDate(order)) === dateKey);
-          return { label: String(index + 1), amount: dayOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0), count: dayOrders.length };
-        })
-        : Array.from({ length: 24 }, (_, hour) => ({
-          label: `${String(hour).padStart(2, '0')}:00`,
-          amount: periodOrders.filter(order => dashboardOrderDate(order).getHours() === hour).reduce((sum, order) => sum + (Number(order.total) || 0), 0)
-        }));
-      const maxAmount = Math.max(...chartValues.map(point => point.amount), 0);
-      const maxBarHeight = 104;
+      const monthLabel = selectedMonth ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) : '';
+      const paidOrders = orders.filter(order => order.status === 'paid').map(order => ({ order, date: dashboardOrderDate(order) })).filter(entry => entry.date);
+      const dayOrders = paidOrders.filter(({ date }) => dashboardDateKey(date) === selectedDay).map(entry => entry.order);
+      const monthOrders = selectedMonth ? paidOrders.filter(({ date }) => dashboardDateKey(date).startsWith(selectedMonth)).map(entry => entry.order) : [];
+      const sumSales = list => list.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
       const moneyLabel = amount => `฿${amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('dash-sales-period-summary').textContent = `รายวันที่เลือก ${dayLabel || '—'}: ${selectedDayOrders.length.toLocaleString('th-TH')} บิล · ${moneyLabel(selectedDayTotal)}  |  รวมเดือน ${monthLabel || '—'}: ${selectedMonthOrders.length.toLocaleString('th-TH')} บิล · ${moneyLabel(selectedMonthTotal)}`;
-      chart.style.gridTemplateColumns = `repeat(${isMonth ? Math.max(12, chartValues.length) : 24},minmax(38px,1fr))`;
-      chart.innerHTML = chartValues.map(point => {
-        const height = maxAmount ? Math.max(3, Math.round(point.amount / maxAmount * maxBarHeight)) : 3;
-        const title = isMonth ? `${point.label} ${monthLabel}` : point.label;
-        return `<div title="${title} · ${moneyLabel(point.amount)}" style="min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:140px;">
-          <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${point.amount ? `฿${point.amount.toLocaleString('th-TH')}` : ''}</span>
-          <div style="width:70%;max-width:28px;min-height:3px;height:${height}px;background:${point.amount ? '#4f46e5' : '#e2e8f0'};border-radius:4px 4px 0 0;transition:height .2s;"></div>
-          <span style="font-size:10px;color:var(--text-muted);">${isMonth ? point.label : point.label}</span>
-        </div>`;
-      }).join('');
+      document.getElementById('dash-sales-day-summary').innerHTML = `${dayLabel || 'เลือกวันที่เพื่อดูยอด'} · <strong>${moneyLabel(sumSales(dayOrders))}</strong> · ${dayOrders.length.toLocaleString('th-TH')} บิล`;
+      document.getElementById('dash-sales-month-summary').innerHTML = `${monthLabel || 'เลือกเดือนเพื่อดูยอด'} · <strong>${moneyLabel(sumSales(monthOrders))}</strong> · ${monthOrders.length.toLocaleString('th-TH')} บิล`;
+
+      const renderBars = (chart, points, isMonth) => {
+        const maxAmount = Math.max(...points.map(point => point.amount), 0);
+        chart.style.gridTemplateColumns = `repeat(${Math.max(isMonth ? 12 : 24, points.length)},minmax(38px,1fr))`;
+        chart.innerHTML = points.map(point => {
+          const height = maxAmount ? Math.max(3, Math.round(point.amount / maxAmount * 104)) : 3;
+          const title = isMonth ? `${point.label} ${monthLabel}` : point.label;
+          return `<div title="${title} · ${moneyLabel(point.amount)} · ${point.count} บิล" style="min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:140px;">
+            <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${point.amount ? `฿${point.amount.toLocaleString('th-TH')}` : ''}</span>
+            <div style="width:70%;max-width:28px;min-height:3px;height:${height}px;background:${point.amount ? '#4f46e5' : '#e2e8f0'};border-radius:4px 4px 0 0;transition:height .2s;"></div>
+            <span style="font-size:10px;color:var(--text-muted);">${point.label}</span>
+          </div>`;
+        }).join('');
+      };
+      const hourly = Array.from({ length: 24 }, (_, hour) => {
+        const hourOrders = dayOrders.filter(order => dashboardOrderDate(order).getHours() === hour);
+        return { label: `${String(hour).padStart(2, '0')}:00`, amount: sumSales(hourOrders), count: hourOrders.length };
+      });
+      renderBars(dayChart, hourly, false);
+      const daysInMonth = selectedMonth ? new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)), 0).getDate() : 31;
+      const daily = Array.from({ length: daysInMonth }, (_, index) => {
+        const dayKey = `${selectedMonth}-${String(index + 1).padStart(2, '0')}`;
+        const dateOrders = monthOrders.filter(order => dashboardDateKey(dashboardOrderDate(order)) === dayKey);
+        return { label: String(index + 1), amount: sumSales(dateOrders), count: dateOrders.length };
+      });
+      renderBars(monthChart, daily, true);
     }
 
-    function exportDashboardSalesPdf() {
-      const isMonth = document.getElementById('dash-sales-period').value === 'month';
+    function exportDashboardSalesPdf(period = 'day') {
+      const isMonth = period === 'month';
       const selectedDay = document.getElementById('dash-sales-date').value;
       const selectedMonth = document.getElementById('dash-sales-month').value;
       const selectedPeriod = isMonth ? selectedMonth : selectedDay;
@@ -4868,9 +4881,9 @@
       const totalUnits = rows.reduce((sum, item) => sum + item.sold, 0);
       const totalRevenue = rows.reduce((sum, item) => sum + item.revenue, 0);
       const money = amount => `฿${Number(amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      summary.innerHTML = `<div class="stat-card"><div class="stat-icon" style="background:#eef2ff;color:#4f46e5"></div><div class="stat-info"><h3>${paidOrders.length.toLocaleString('th-TH')}</h3><p>บิลที่ชำระแล้ว</p></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#ecfdf5;color:#059669"></div><div class="stat-info"><h3>${totalUnits.toLocaleString('th-TH')}</h3><p>จำนวนจาน/ชิ้นที่ขาย</p></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#fffbeb;color:#d97706"></div><div class="stat-info"><h3>${money(totalRevenue)}</h3><p>ยอดขายจากรายการอาหาร</p></div></div>`;
+      summary.innerHTML = `<div class="stat-card"><div class="stat-icon" data-glyph="≡" style="background:#eef2ff;color:#4f46e5"></div><div class="stat-info"><h3>${paidOrders.length.toLocaleString('th-TH')}</h3><p>บิลที่ชำระแล้ว</p></div></div>
+        <div class="stat-card"><div class="stat-icon" data-glyph="▤" style="background:#ecfdf5;color:#059669"></div><div class="stat-info"><h3>${totalUnits.toLocaleString('th-TH')}</h3><p>จำนวนจาน/ชิ้นที่ขาย</p></div></div>
+        <div class="stat-card"><div class="stat-icon" data-glyph="฿" style="background:#fffbeb;color:#d97706"></div><div class="stat-info"><h3>${money(totalRevenue)}</h3><p>ยอดขายจากรายการอาหาร</p></div></div>`;
 
       if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:28px">ยังไม่มีรายการอาหารจากบิลที่ชำระแล้วในช่วงวันที่นี้</td></tr>';
@@ -5316,7 +5329,7 @@
             <button class="action-icon-btn" onclick="adjustStock('${stk.code}', 1)">+</button>
           </td>
           <td style="text-align: center;">
-            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteStock('${stk.code}')"></button>
+            <button class="action-icon-btn" data-glyph="×" aria-label="ลบสินค้า ${custEscape(stk.name)}" style="color: #ef4444;" onclick="deleteStock('${stk.code}')"></button>
           </td>
         </tr>
       `).join('');
@@ -5375,7 +5388,7 @@
           <td>${exp.category}</td>
           <td style="font-weight: 700; color: #e11d48;">฿${exp.amount.toLocaleString()}</td>
           <td style="text-align: center;">
-            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteExpense('${exp.id}')"></button>
+            <button class="action-icon-btn" data-glyph="×" aria-label="ลบรายการค่าใช้จ่าย" style="color: #ef4444;" onclick="deleteExpense('${exp.id}')"></button>
           </td>
         </tr>
       `).join('');
@@ -5526,7 +5539,7 @@
           <td>${s.contact}</td>
           <td>${s.phone}</td>
           <td>${s.products}</td>
-          <td style="text-align: center;"><button class="action-icon-btn" style="color: #ef4444;" onclick="deleteSupplier('${s.id}')"></button></td>
+          <td style="text-align: center;"><button class="action-icon-btn" data-glyph="×" aria-label="ลบผู้จำหน่าย" style="color: #ef4444;" onclick="deleteSupplier('${s.id}')"></button></td>
         </tr>
       `).join('');
     }
@@ -5561,7 +5574,7 @@
           <td style="font-weight: 700;">฿${p.total}</td>
           <td>${p.date}</td>
           <td><span class="status-badge status-available">สำเร็จ</span></td>
-          <td style="text-align: center;"><button class="action-icon-btn" style="color:#ef4444;" onclick="deletePo('${p.id}')"></button></td>
+          <td style="text-align: center;"><button class="action-icon-btn" data-glyph="×" aria-label="ลบใบสั่งซื้อ" style="color:#ef4444;" onclick="deletePo('${p.id}')"></button></td>
         </tr>
       `).join('');
     }
@@ -5588,7 +5601,7 @@
       grid.innerHTML = staffList.map(s => `
         <div class="table-card">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 32px;">${s.emoji}</div>
+            <div class="staff-avatar-icon" aria-hidden="true">${custEscape(String(s.name || 'พ').trim().slice(0, 1))}</div>
             <div>
               <h4 style="font-size: 15px; font-weight: 700;">${s.name}</h4>
               <div style="font-size: 12px; color: var(--text-muted);">${s.role}</div>
@@ -5601,7 +5614,7 @@
             <button class="btn-tbl-action" style="flex: 2;" onclick="toggleStaffShift('${s.id}')">
               ${s.status === 'active' ? ' ลงเวลาออก' : ' ลงเวลางาน'}
             </button>
-            <button class="action-icon-btn" style="color: #ef4444;" onclick="deleteStaff('${s.id}')"></button>
+            <button class="action-icon-btn" data-glyph="×" aria-label="ลบพนักงาน" style="color: #ef4444;" onclick="deleteStaff('${s.id}')"></button>
           </div>
         </div>
       `).join('');

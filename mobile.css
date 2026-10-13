@@ -222,7 +222,6 @@
   body:not(.customer-order-mode) #dash-hourly-chart { grid-template-columns: repeat(6, minmax(38px, 1fr)) !important; }
   body:not(.customer-order-mode) #dash-hourly-chart > div { height: 118px !important; }
   body:not(.customer-order-mode) #admin-login-overlay { align-items: center; }
-  body:not(.customer-order-mode) #dash-sales-period + input,
   body:not(.customer-order-mode) #dash-sales-date,
   body:not(.customer-order-mode) #dash-sales-month { max-width: 100%; }
   body:not(.customer-order-mode) .data-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
