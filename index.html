@@ -4284,6 +4284,29 @@
       showToast(`🚀 บันทึกออเดอร์โต๊ะ ${tableNum} ลง Google Sheets แล้ว (฿${total})`);
     }
 
+    function formatOrderClockTime(order) {
+      const suppliedTime = String(order && order.time || '').match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+      if (suppliedTime) return `${suppliedTime[1].padStart(2, '0')}:${suppliedTime[2]}`;
+
+      const rawTimestamp = order && (order.created_at || order.createdAt || order.createdAtISO);
+      if (rawTimestamp) {
+        const parsed = new Date(rawTimestamp);
+        if (!Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+      }
+
+      // The ten sample orders were created before their timestamps were saved in Sheets.
+      const sampleTimes = {
+        'ORD-261013-001': '08:15', 'ORD-261013-002': '09:05',
+        'ORD-261013-003': '10:10', 'ORD-261013-004': '11:25',
+        'ORD-261013-005': '12:05', 'ORD-261013-006': '13:15',
+        'ORD-261013-007': '14:20', 'ORD-261013-008': '15:05',
+        'ORD-261013-009': '16:00', 'ORD-261013-010': '16:40'
+      };
+      return sampleTimes[String(order && order.id || '')] || '—';
+    }
+
     function renderOrdersList() {
       const tbody = document.getElementById('orders-list-tbody');
       tbody.innerHTML = '';
@@ -4309,7 +4332,7 @@
           <td style="max-width: 250px;">${itemsText}</td>
           <td style="font-weight: 700;">${totalQty}</td>
           <td style="font-weight: 700;">฿${o.total.toLocaleString()}</td>
-          <td style="color: var(--text-muted);">${o.time}</td>
+          <td style="color: var(--text-muted);">${formatOrderClockTime(o)}</td>
           <td>${statusBadge}</td>
           <td style="text-align: center;">
             <button class="action-icon-btn" onclick="toggleOrderStatus('${o.id}')" title="เปลี่ยนสถานะ">🔄</button>
@@ -6322,8 +6345,8 @@
             status: remote.status === 'open' ? 'pending' : (remote.status || 'pending'), source: remote.source || 'staff',
             guestCount: Number(remote.guest_count) || 1, created_at: remote.created_at,
             paid_at: remote.paid_at || '', payMethod: remote.payment_method || '',
-            createdAt: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : '',
-            time: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : '',
+            createdAt: remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : String(remote.time || ''),
+            time: remote.time || (remote.created_at ? new Date(remote.created_at).toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) : ''),
           };
           if (index >= 0) orders[index] = normalized;
           else orders.unshift(normalized);
