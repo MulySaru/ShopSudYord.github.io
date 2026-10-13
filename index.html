@@ -2308,7 +2308,7 @@
             <div class="form-group">
               <label for="setting-store-pp-qr">รูป QR รับชำระเงิน PromptPay (ไม่บังคับ)</label>
               <input type="file" class="form-input" id="setting-store-pp-qr" accept="image/*" onchange="loadPromptPayQrImage(this)">
-              <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">เลือกรูป QR ของร้าน ระบบจะย่อรูปและบันทึกไว้ในข้อมูลร้านเพื่อแสดงบนใบเสร็จ</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">รองรับไฟล์รูปสูงสุด 8 MB (รวมไฟล์ 90 KB) ระบบจะย่อรูปให้เหมาะกับข้อมูลร้านและแสดงบนใบเสร็จ</div>
               <div id="setting-store-pp-qr-preview-wrap" style="display:none;align-items:center;gap:12px;margin-top:10px;padding:10px;border:1px solid var(--border-color);border-radius:10px;background:#fff;">
                 <img id="setting-store-pp-qr-preview" alt="ตัวอย่าง QR PromptPay ของร้าน" style="width:92px;height:92px;object-fit:contain;image-rendering:auto">
                 <button type="button" class="btn-tbl-action" onclick="clearPromptPayQrImage()">ลบรูป QR</button>
@@ -6092,14 +6092,13 @@
           image.src = objectUrl;
         });
         let imageData = '';
-        const compressionProfiles = [
-          { size: 512, quality: 0.82 },
-          { size: 420, quality: 0.72 },
-          { size: 340, quality: 0.62 },
-          { size: 280, quality: 0.52 }
-        ];
+        let stateSize = 0;
+        // Keep the QR lossless and reserve room below Google Sheets' 50,000
+        // character per-cell limit for the rest of the shared restaurant data.
+        const maxStateChars = 48000;
+        const compressionProfiles = [512, 420, 360, 320, 280, 256, 224, 192];
         for (const profile of compressionProfiles) {
-          const scale = Math.min(1, profile.size / Math.max(image.naturalWidth, image.naturalHeight));
+          const scale = Math.min(1, profile / Math.max(image.naturalWidth, image.naturalHeight));
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
           canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -6108,11 +6107,16 @@
           context.fillStyle = '#fff';
           context.fillRect(0, 0, canvas.width, canvas.height);
           context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          imageData = canvas.toDataURL('image/jpeg', profile.quality);
-          if (imageData.length <= 24000) break;
+          imageData = canvas.toDataURL('image/png');
+          const currentState = currentSharedPOSState();
+          stateSize = JSON.stringify({
+            ...currentState,
+            settings: { ...currentState.settings, promptPayQrImage: imageData }
+          }).length;
+          if (stateSize <= maxStateChars) break;
         }
-        if (!imageData || imageData.length > 24000) {
-          throw new Error('บีบอัดรูป QR แล้วยังมีขนาดใหญ่เกินไป กรุณาเลือกรูป QR ที่ครอปชิดขอบและคมชัด');
+        if (!imageData || stateSize > maxStateChars) {
+          throw new Error('ย่อรูป QR แล้วยังใหญ่เกินขนาดที่ Google Sheets รองรับ กรุณาครอปรูปให้เหลือเฉพาะ QR แล้วลองอีกครั้ง');
         }
         storeSettings.promptPayQrImage = imageData;
         renderPromptPayQrPreview();
